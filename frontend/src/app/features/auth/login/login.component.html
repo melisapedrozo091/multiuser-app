@@ -1,0 +1,51 @@
+<div class="login-container">
+  <div class="card login-card">
+    <h2>{{ isRegister ? 'Crear Cuenta' : 'Iniciar Sesión' }}</h2>
+    <p class="subtitle">{{ isRegister ? 'Ingresa tus datos para registrarte en la plataforma' : 'Bienvenido de nuevo' }}</p>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <div class="form-group" *ngIf="isRegister">
+        <label>Nombre de Usuario / Mostrar como</label>
+        <input type="text" formControlName="displayName" placeholder="Ej: Juan Pérez" class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label>Correo Electrónico</label>
+        <input type="email" formControlName="email" placeholder="usuario@ejemplo.com" class="form-control" />
+        <span class="error" *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
+          Ingrese un email válido
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" formControlName="password" placeholder="••••••••" class="form-control" />
+        <span class="error" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+          Mínimo 6 caracteres
+        </span>
+      </div>
+
+      <div class="form-group" *ngIf="isRegister">
+        <label>Rol de Usuario</label>
+        <select formControlName="role" class="form-control">
+          <option value="CLIENTE">Cliente</option>
+          <option value="ADMIN">Administrador</option>
+        </select>
+      </div>
+
+      <div class="alert alert-danger" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" [disabled]="loginForm.invalid || loading">
+        {{ loading ? 'Procesando...' : (isRegister ? 'Registrarse' : 'Ingresar') }}
+      </button>
+    </form>
+
+    <div class="switch-mode">
+      <button class="btn-link" (click)="toggleMode()">
+        {{ isRegister ? '¿Ya tienes cuenta? Inicia Sesión' : '¿No tienes cuenta? Regístrate gratis' }}
+      </button>
+    </div>
+  </div>
+</div>

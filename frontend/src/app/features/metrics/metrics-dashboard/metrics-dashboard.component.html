@@ -1,0 +1,38 @@
+<div class="page-container">
+  <div class="header-section">
+    <h1>Gráfico de Ventas y Puntuaciones</h1>
+    <p class="subtitle">Visualización de métricas de rendimiento y satisfacción de clientes</p>
+  </div>
+
+  <div class="metrics-grid">
+    <!-- Visual Bar Chart -->
+    <div class="card chart-card">
+      <h3>📈 Rendimiento de Ventas Mensuales ($)</h3>
+      <div class="bar-chart">
+        <div class="bar-group" *ngFor="let s of salesData">
+          <div class="bar-wrapper">
+            <div class="bar" [style.height.%]="(s.total / maxSales) * 100">
+              <span class="bar-value">\${{ s.total }}</span>
+            </div>
+          </div>
+          <span class="bar-label">{{ s.month }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rating Score List -->
+    <div class="card ratings-card">
+      <h3>⭐ Puntuación de Servicios</h3>
+      <div class="rating-item" *ngFor="let r of topRatings">
+        <div class="rating-info">
+          <strong>{{ r.product }}</strong>
+          <span class="reviews-count">{{ r.reviews }} evaluaciones</span>
+        </div>
+        <div class="rating-score">
+          <span class="stars">⭐⭐⭐⭐⭐</span>
+          <span class="score">{{ r.rating }} / 5</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

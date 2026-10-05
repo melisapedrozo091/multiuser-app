@@ -1,0 +1,33 @@
+<header class="navbar">
+  <div class="nav-brand" routerLink="/products">
+    <span class="logo">⚡</span>
+    <span class="brand-text">MultiUser App</span>
+  </div>
+
+  <nav class="nav-links">
+    <ng-container *ngIf="auth.currentUser">
+      <a routerLink="/products" routerLinkActive="active">📦 Productos</a>
+      <a routerLink="/chat" routerLinkActive="active">💬 Foro / Chat</a>
+      <a routerLink="/metrics" routerLinkActive="active">📊 Métricas</a>
+      <a routerLink="/admin/users" routerLinkActive="active" *ngIf="auth.currentUser?.role === 'ADMIN'">🛡️ Admin Usuarios</a>
+      <a routerLink="/profile" routerLinkActive="active">👤 Mi Perfil</a>
+    </ng-container>
+  </nav>
+
+  <div class="nav-actions">
+    <button class="btn btn-secondary theme-toggle" (click)="toggleTheme()">
+      {{ themeService.isDark() ? '☀️ Claro' : '🌙 Oscuro' }}
+    </button>
+
+    <ng-container *ngIf="auth.currentUser">
+      <button class="btn btn-danger" (click)="logout()">Salir</button>
+    </ng-container>
+    <ng-container *ngIf="!auth.currentUser">
+      <a routerLink="/login" class="btn btn-primary">Ingresar</a>
+    </ng-container>
+  </div>
+</header>
+
+<main>
+  <router-outlet></router-outlet>
+</main>

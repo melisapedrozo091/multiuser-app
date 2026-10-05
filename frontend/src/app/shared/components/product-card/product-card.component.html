@@ -1,0 +1,21 @@
+<div class="card product-card" [appHighlight]="'rgba(239, 68, 68, 0.15)'" [highlightCondition]="product.stock < 5">
+  <div class="badge" *ngIf="product.stock < 5">¡Bajo Stock! ({{ product.stock }})</div>
+  
+  <div class="card-header">
+    <h3 class="product-title">{{ product.name }}</h3>
+    <span class="price">\${{ product.price }}</span>
+  </div>
+
+  <p class="description">{{ product.description || 'Sin descripción disponible.' }}</p>
+
+  <div class="card-footer">
+    <div class="stock-info">Stock: <strong>{{ product.stock }}</strong> unidades</div>
+    <div class="actions">
+      <button class="btn btn-primary" (click)="onBuy()">Comprar</button>
+      <ng-container *ngIf="isAdmin">
+        <button class="btn btn-secondary" (click)="onEdit()">✏️</button>
+        <button class="btn btn-danger" (click)="onDelete()">🗑️</button>
+      </ng-container>
+    </div>
+  </div>
+</div>

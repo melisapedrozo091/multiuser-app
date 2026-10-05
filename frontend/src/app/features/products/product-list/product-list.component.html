@@ -1,0 +1,45 @@
+<div class="page-container">
+  <div class="header-section">
+    <div>
+      <h1>Catálogo de Productos y Servicios</h1>
+      <p class="subtitle">Gestiona y explora las ofertas disponibles en tiempo real</p>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-secondary" (click)="exportCsv()">📥 Exportar a CSV</button>
+      <button class="btn btn-primary" *ngIf="isAdmin" (click)="loadProducts()">🔄 Recargar</button>
+    </div>
+  </div>
+
+  <div class="filter-bar card">
+    <div class="search-box">
+      <span>🔍</span>
+      <input
+        type="text"
+        [(ngModel)]="searchText"
+        placeholder="Filtrar en tiempo real por nombre o descripción..."
+        class="search-input"
+      />
+    </div>
+  </div>
+
+  <div class="loading-spinner" *ngIf="loading">
+    Cargando productos...
+  </div>
+
+  <div class="products-grid" *ngIf="!loading">
+    <app-product-card
+      *ngFor="let prod of (products | filter:searchText:['name', 'description'])"
+      [product]="prod"
+      [isAdmin]="isAdmin"
+      (buy)="onBuyProduct($event)"
+      (edit)="onEditProduct($event)"
+      (delete)="onDeleteProduct($event)"
+    >
+    </app-product-card>
+  </div>
+
+  <div class="empty-state card" *ngIf="!loading && (products | filter:searchText:['name', 'description']).length === 0">
+    <p>No se encontraron productos que coincidan con la búsqueda "{{ searchText }}".</p>
+  </div>
+</div>

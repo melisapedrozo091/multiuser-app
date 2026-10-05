@@ -1,0 +1,33 @@
+<div class="page-container">
+  <div class="header-section">
+    <h1>Foro / Chat en Tiempo Real</h1>
+    <p class="subtitle">Comunícate en vivo con otros usuarios de la comunidad</p>
+  </div>
+
+  <div class="card chat-card">
+    <div class="messages-container">
+      <div
+        *ngFor="let m of messages"
+        class="message-bubble"
+        [class.my-message]="m.senderUid === auth.currentUser?.id"
+      >
+        <div class="message-meta">
+          <strong class="sender">{{ m.senderName }}</strong>
+          <span class="time">{{ m.timestamp | date:'shortTime' }}</span>
+        </div>
+        <p class="text">{{ m.message }}</p>
+      </div>
+    </div>
+
+    <div class="chat-input-area">
+      <input
+        type="text"
+        [(ngModel)]="newMessage"
+        (keyup.enter)="onSend()"
+        placeholder="Escribe tu mensaje aquí y presiona Enter..."
+        class="chat-input"
+      />
+      <button class="btn btn-primary" (click)="onSend()">Enviar</button>
+    </div>
+  </div>
+</div>

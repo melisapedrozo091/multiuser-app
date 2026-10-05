@@ -1,0 +1,18 @@
+<div class="page-container">
+  <div class="card profile-card" *ngIf="auth.currentUser as user">
+    <div class="avatar">👤</div>
+    <h2>{{ user.displayName || 'Usuario Registrado' }}</h2>
+    <p class="email">{{ user.email }}</p>
+
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="label">ID de Cuenta:</span>
+        <code>{{ user.id }}</code>
+      </div>
+      <div class="info-item">
+        <span class="label">Rol en el Sistema:</span>
+        <span class="badge">{{ user.role }}</span>
+      </div>
+    </div>
+  </div>
+</div>

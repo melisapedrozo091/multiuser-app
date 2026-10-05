@@ -1,0 +1,39 @@
+<div class="page-container">
+  <div class="header-section">
+    <div>
+      <h1>Administrador de Usuarios</h1>
+      <p class="subtitle">Panel exclusivo para gestionar roles y permisos del sistema</p>
+    </div>
+  </div>
+
+  <div class="card table-card">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>ID / UID</th>
+          <th>Nombre</th>
+          <th>Correo Electrónico</th>
+          <th>Rol Actual</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let u of users">
+          <td><code>{{ u.id }}</code></td>
+          <td>{{ u.displayName || 'Sin nombre' }}</td>
+          <td>{{ u.email }}</td>
+          <td>
+            <span class="role-badge" [class.badge-admin]="u.role === 'ADMIN'" [class.badge-cliente]="u.role === 'CLIENTE'">
+              {{ u.role }}
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-secondary btn-sm" (click)="toggleUserRole(u)">
+              Cambiar a {{ u.role === 'ADMIN' ? 'CLIENTE' : 'ADMIN' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
