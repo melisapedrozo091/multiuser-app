@@ -1,19 +1,59 @@
-<div class="page-container">
+<div class="page-container" style="max-width: 750px; margin: 40px auto; padding: 0 20px;">
   <div class="card profile-card" *ngIf="auth.currentUser as user">
-    <div class="avatar">👤</div>
-    <h2>{{ user.displayName || 'Usuario Registrado' }}</h2>
-    <p class="email">{{ user.email }}</p>
+    <div class="profile-header" style="text-align: center; margin-bottom: 25px;">
+      <div class="avatar" style="font-size: 3rem; margin-bottom: 10px;">👤</div>
+      <h2 style="font-size: 1.8rem; font-weight: 700; margin: 0; color: var(--text-color, #f8fafc);">{{ user.displayName || 'Usuario Registrado' }}</h2>
+      <p class="email" style="color: #94a3b8; font-size: 0.95rem; margin-top: 4px;">{{ user.email }}</p>
+    </div>
 
-    <div class="info-grid">
+    <div class="info-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; background: var(--bg-hover, rgba(255,255,255,0.04)); padding: 20px; border-radius: 12px; margin-bottom: 30px;">
       <div class="info-item">
-        <span class="label">ID de Cuenta:</span>
-        <code>{{ user.id }}</code>
+        <span class="label" style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">ID de Cuenta:</span>
+        <code style="font-size: 0.85rem; color: #6366f1;">{{ user.id }}</code>
       </div>
       <div class="info-item">
-        <span class="label">Rol en el Sistema:</span>
-        <span class="badge">{{ user.role }}</span>
+        <span class="label" style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">Rol de Usuario:</span>
+        <span class="badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; display: inline-block;">{{ user.role }}</span>
       </div>
     </div>
 
+    <!-- Security & Password Management Section -->
+    <div class="security-section" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 25px;">
+      <h3 style="font-size: 1.3rem; font-weight: 600; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
+        🛡️ Seguridad y Cambio de Contraseña
+      </h3>
+      <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 20px;">
+        Para mantener tu cuenta protegida, actualiza periódicamente tu contraseña de acceso.
+      </p>
+
+      <form (ngSubmit)="onChangePassword()" style="display: flex; flex-direction: column; gap: 15px;">
+        <div class="form-group">
+          <label style="display: block; font-size: 0.85rem; color: var(--text-color, #e2e8f0); margin-bottom: 6px;">Contraseña Actual</label>
+          <input type="password" [(ngModel)]="currentPassword" name="currentPassword" placeholder="••••••••" class="form-control" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: var(--bg-hover, #1e293b); color: var(--text-color, #fff);" />
+        </div>
+
+        <div class="form-group">
+          <label style="display: block; font-size: 0.85rem; color: var(--text-color, #e2e8f0); margin-bottom: 6px;">Nueva Contraseña</label>
+          <input type="password" [(ngModel)]="newPassword" name="newPassword" placeholder="Mínimo 6 caracteres" class="form-control" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: var(--bg-hover, #1e293b); color: var(--text-color, #fff);" />
+        </div>
+
+        <div class="form-group">
+          <label style="display: block; font-size: 0.85rem; color: var(--text-color, #e2e8f0); margin-bottom: 6px;">Confirmar Nueva Contraseña</label>
+          <input type="password" [(ngModel)]="confirmPassword" name="confirmPassword" placeholder="Repite la nueva contraseña" class="form-control" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: var(--bg-hover, #1e293b); color: var(--text-color, #fff);" />
+        </div>
+
+        <div class="alert alert-danger" *ngIf="errorMessage" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 12px; border-radius: 8px; font-size: 0.9rem;">
+          ⚠️ {{ errorMessage }}
+        </div>
+
+        <div class="alert alert-success" *ngIf="successMessage" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; padding: 12px; border-radius: 8px; font-size: 0.9rem;">
+          ✅ {{ successMessage }}
+        </div>
+
+        <button type="submit" class="btn btn-primary" [disabled]="loading" style="padding: 12px 24px; border-radius: 8px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #fff; font-weight: 600; border: none; cursor: pointer; align-self: flex-start; margin-top: 10px;">
+          {{ loading ? 'Guardando...' : '🔒 Actualizar Contraseña' }}
+        </button>
+      </form>
+    </div>
   </div>
 </div>

@@ -1,58 +1,51 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.css']
 })
 export class ProfileComponent {
+  currentPassword = '';
+  newPassword = '';
+  confirmPassword = '';
+
+  loading = false;
+  successMessage: string | null = null;
+  errorMessage: string | null = null;
+
   constructor(public auth: AuthService) {}
 
-  downloadSyllabusPdf(): void {
-    const user = this.auth.currentUser;
-    const content = `
-====================================================
-           ACADEMIA TECH - PLAN DE ESTUDIOS
-====================================================
-Estudiante: ${user?.displayName || 'Usuario'}
-Email: ${user?.email}
-Rol: ${user?.role}
-Fecha de Emisión: ${new Date().toLocaleDateString('es-AR')}
-----------------------------------------------------
+  async onChangePassword(): Promise<void> {
+    if (!this.newPassword || this.newPassword.length < 6) {
+      this.errorMessage = 'La nueva contraseña debe tener al menos 6 caracteres.';
+      return;
+    }
 
-PROGRAMA ACADÉMICO Y MÓDULOS DE ESTUDIO 2026:
+    if (this.newPassword !== this.confirmPassword) {
+      this.errorMessage = 'La confirmación de la nueva contraseña no coincide.';
+      return;
+    }
 
-1. MÓDULO 1: FUNDAMENTOS & ARQUITECTURA LIMPIA
-   - Principios SOLID en TypeScript
-   - Estructura Standalone en Angular y RxJS
-   - Configuración de Servidores Express y Prisma ORM
+    this.loading = true;
+    this.errorMessage = null;
+    this.successMessage = null;
 
-2. MÓDULO 2: DESARROLLO DE API REST & BASE DE DATOS
-   - Esquemas relacionales y migraciones SQLite / Postgres
-   - Autenticación con JWT & Custom Claims en Firebase
-   - Middlewares de seguridad y roles (ADMIN / CLIENTE)
-
-3. MÓDULO 3: DEVOPS, CONTENERIZACIÓN & DEPLOYMENT
-   - Contenerización con Docker y Docker Compose
-   - Integración Continua (CI/CD) en GitHub Actions
-   - Despliegue en la nube con monitoreo de métricas
-
-----------------------------------------------------
-Soporte Académico: soporte@academiatech.com
-Atención al Cliente: 0810-333-TECH (8324)
-====================================================
-    `;
-
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Plan_de_Estudios_${user?.email || 'Alumno'}.txt`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    try {
+      const res = await this.auth.changePassword(this.currentPassword, this.newPassword);
+      this.successMessage = res.message || 'Contraseña actualizada con éxito.';
+      this.currentPassword = '';
+      this.newPassword = '';
+      this.confirmPassword = '';
+    } catch (err: any) {
+      this.errorMessage = err.message || 'Error al cambiar la contraseña';
+    } finally {
+      this.loading = false;
+    }
   }
 }

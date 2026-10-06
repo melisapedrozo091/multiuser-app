@@ -3,8 +3,15 @@
     <h2 *ngIf="isResetMode">🔑 Restablecer Contraseña</h2>
     <h2 *ngIf="!isResetMode">{{ isRegister ? 'Crear Cuenta' : 'Iniciar Sesión' }}</h2>
 
-    <p class="subtitle" *ngIf="isResetMode">Ingresa tu correo para recibir las instrucciones de recuperación</p>
-    <p class="subtitle" *ngIf="!isResetMode">{{ isRegister ? 'Ingresa tus datos para registrarte en la plataforma' : 'Bienvenido de nuevo a Academia Tech' }}</p>
+    <p class="subtitle" *ngIf="isResetMode && resetStep === 1">
+      Paso 1: Ingresa tu correo para solicitar tu código de seguridad de 6 dígitos
+    </p>
+    <p class="subtitle" *ngIf="isResetMode && resetStep === 2">
+      Paso 2: Ingresa el código de 6 dígitos enviado a tu email y tu nueva contraseña
+    </p>
+    <p class="subtitle" *ngIf="!isResetMode">
+      {{ isRegister ? 'Ingresa tus datos para registrarte en la plataforma' : 'Bienvenido de nuevo a Academia Tech' }}
+    </p>
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
       <div class="form-group" *ngIf="isRegister">
@@ -14,18 +21,25 @@
 
       <div class="form-group">
         <label>Correo Electrónico</label>
-        <input type="email" formControlName="email" placeholder="usuario@ejemplo.com" class="form-control" />
-        <span class="error" *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
-          Ingrese un email válido
-        </span>
+        <input type="email" formControlName="email" placeholder="usuario@ejemplo.com" class="form-control" [readonly]="isResetMode && resetStep === 2" />
       </div>
+
+      <!-- Reset Password Step 2 fields -->
+      <ng-container *ngIf="isResetMode && resetStep === 2">
+        <div class="form-group">
+          <label>🔑 Código de Verificación (6 dígitos)</label>
+          <input type="text" formControlName="resetCode" placeholder="Ej: 482910" maxlength="6" class="form-control" style="letter-spacing: 4px; font-weight: bold; text-align: center; font-size: 1.2rem;" />
+        </div>
+
+        <div class="form-group">
+          <label>🔒 Nueva Contraseña</label>
+          <input type="password" formControlName="newPassword" placeholder="Mínimo 6 caracteres" class="form-control" />
+        </div>
+      </ng-container>
 
       <div class="form-group" *ngIf="!isResetMode">
         <label>Contraseña</label>
         <input type="password" formControlName="password" placeholder="••••••••" class="form-control" />
-        <span class="error" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
-          Mínimo 6 caracteres
-        </span>
       </div>
 
       <div class="form-group" *ngIf="isRegister">
@@ -45,7 +59,15 @@
       </div>
 
       <button type="submit" class="btn btn-primary btn-block" [disabled]="loading">
-        {{ loading ? 'Procesando...' : (isResetMode ? 'Enviar Instrucciones de Recuperación' : (isRegister ? 'Registrarse' : 'Ingresar')) }}
+        <span *ngIf="loading">Procesando...</span>
+        <span *ngIf="!loading">
+          <ng-container *ngIf="isResetMode">
+            {{ resetStep === 1 ? 'Enviar Código de Verificación 📧' : 'Validar Código y Definir Nueva Contraseña 🔐' }}
+          </ng-container>
+          <ng-container *ngIf="!isResetMode">
+            {{ isRegister ? 'Registrarse' : 'Ingresar' }}
+          </ng-container>
+        </span>
       </button>
     </form>
 

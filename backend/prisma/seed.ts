@@ -8,10 +8,11 @@ async function main() {
   // Create default admin user
   const admin = await prisma.user.upsert({
     where: { email: 'admin@sistema.com' },
-    update: {},
+    update: { password: 'admin123' },
     create: {
       id: 'usr_admin',
       email: 'admin@sistema.com',
+      password: 'admin123',
       displayName: 'Administrador General',
       role: 'ADMIN'
     }
@@ -20,10 +21,11 @@ async function main() {
   // Create default client user
   const client = await prisma.user.upsert({
     where: { email: 'cliente@gmail.com' },
-    update: {},
+    update: { password: 'cliente123' },
     create: {
       id: 'usr_client',
       email: 'cliente@gmail.com',
+      password: 'cliente123',
       displayName: 'Carlos López',
       role: 'CLIENTE'
     }

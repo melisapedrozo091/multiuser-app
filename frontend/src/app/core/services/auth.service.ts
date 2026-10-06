@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { User } from '../models/app-models';
 import { environment } from '../../../environments/environment';
 
@@ -67,19 +67,55 @@ export class AuthService {
     this.currentUserSubject.next(null);
   }
 
-  async resetPassword(email: string, newPassword?: string): Promise<{ message: string }> {
-    const res = await fetch(`${environment.apiBase}/auth/reset-password`, {
+  // STEP 1: Request 6-digit verification code
+  async requestResetCode(email: string): Promise<{ message: string }> {
+    const res = await fetch(`${environment.apiBase}/auth/request-reset`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, newPassword })
+      body: JSON.stringify({ email })
     });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Error al solicitar restauración de contraseña');
+      throw new Error(err.error || 'Error al solicitar código de verificación');
+    }
+
+    return res.json();
+  }
+
+  // STEP 2: Validate code and set new password
+  async confirmResetPassword(email: string, resetCode: string, newPassword: string): Promise<{ message: string }> {
+    const res = await fetch(`${environment.apiBase}/auth/confirm-reset`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, resetCode, newPassword })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Error al confirmar la nueva contraseña');
+    }
+
+    return res.json();
+  }
+
+  // Profile Change Password (authenticated)
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
+    const token = this.getToken();
+    const res = await fetch(`${environment.apiBase}/auth/change-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Error al cambiar contraseña');
     }
 
     return res.json();
   }
 }
-
