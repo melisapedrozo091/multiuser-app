@@ -4,6 +4,7 @@ import { Product } from '../../../core/models/app-models';
 import { HighlightDirective } from '../../../core/directives/highlight.directive';
 
 import { AuthService } from '../../../core/services/auth.service';
+import { CurrencyService } from '../../../core/services/currency.service';
 
 @Component({
   selector: 'app-product-card',
