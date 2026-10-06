@@ -14,7 +14,7 @@ export const login = async (req: Request, res: Response) => {
       const dbUser = await prisma.user.findUnique({ where: { email } });
       const role = dbUser?.role || 'CLIENTE';
       const customToken = await firebaseAdmin.auth().createCustomToken(userRecord.uid, { role });
-      return res.json({ token: customToken, user: { uid: userRecord.uid, email, role } });
+      return res.json({ token: customToken, user: { id: userRecord.uid, uid: userRecord.uid, email, role } });
     }
 
     // Local dev mode without Firebase service key
@@ -29,7 +29,7 @@ export const login = async (req: Request, res: Response) => {
       { expiresIn: '7d' }
     );
 
-    return res.json({ token, user: { uid: dbUser.id, email: dbUser.email, role: dbUser.role, displayName: dbUser.displayName } });
+    return res.json({ token, user: { id: dbUser.id, uid: dbUser.id, email: dbUser.email, role: dbUser.role, displayName: dbUser.displayName } });
   } catch (error: any) {
     return res.status(401).json({ error: 'Credenciales inválidas o usuario no registrado', details: error.message });
   }
