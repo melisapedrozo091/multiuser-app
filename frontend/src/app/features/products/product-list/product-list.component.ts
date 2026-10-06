@@ -11,13 +11,6 @@ import { ProductCardComponent } from '../../../shared/components/product-card/pr
 
 import { CurrencyService, CurrencyMode } from '../../../core/services/currency.service';
 
-@Component({
-  selector: 'app-product-list',
-  standalone: true,
-  imports: [CommonModule, FormsModule, FilterPipe, ProductCardComponent],
-  templateUrl: './product-list.component.html',
-  styleUrls: ['./product-list.component.css']
-})
 export interface CourseSyllabus {
   author: string;
   supportEmail: string;
