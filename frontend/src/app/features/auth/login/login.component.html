@@ -1,7 +1,10 @@
 <div class="login-container">
   <div class="card login-card">
-    <h2>{{ isRegister ? 'Crear Cuenta' : 'Iniciar Sesión' }}</h2>
-    <p class="subtitle">{{ isRegister ? 'Ingresa tus datos para registrarte en la plataforma' : 'Bienvenido de nuevo' }}</p>
+    <h2 *ngIf="isResetMode">🔑 Restablecer Contraseña</h2>
+    <h2 *ngIf="!isResetMode">{{ isRegister ? 'Crear Cuenta' : 'Iniciar Sesión' }}</h2>
+
+    <p class="subtitle" *ngIf="isResetMode">Ingresa tu correo para recibir las instrucciones de recuperación</p>
+    <p class="subtitle" *ngIf="!isResetMode">{{ isRegister ? 'Ingresa tus datos para registrarte en la plataforma' : 'Bienvenido de nuevo a Academia Tech' }}</p>
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
       <div class="form-group" *ngIf="isRegister">
@@ -17,7 +20,7 @@
         </span>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" *ngIf="!isResetMode">
         <label>Contraseña</label>
         <input type="password" formControlName="password" placeholder="••••••••" class="form-control" />
         <span class="error" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
@@ -34,17 +37,29 @@
       </div>
 
       <div class="alert alert-danger" *ngIf="errorMessage">
-        {{ errorMessage }}
+        ⚠️ {{ errorMessage }}
       </div>
 
-      <button type="submit" class="btn btn-primary btn-block" [disabled]="loginForm.invalid || loading">
-        {{ loading ? 'Procesando...' : (isRegister ? 'Registrarse' : 'Ingresar') }}
+      <div class="alert alert-success" *ngIf="successMessage" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; padding: 12px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 15px;">
+        ✅ {{ successMessage }}
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" [disabled]="loading">
+        {{ loading ? 'Procesando...' : (isResetMode ? 'Enviar Instrucciones de Recuperación' : (isRegister ? 'Registrarse' : 'Ingresar')) }}
       </button>
     </form>
 
-    <div class="switch-mode">
-      <button class="btn-link" (click)="toggleMode()">
+    <div class="switch-mode" style="margin-top: 15px; display: flex; flex-direction: column; gap: 8px; align-items: center;">
+      <button class="btn-link" (click)="toggleResetMode()" *ngIf="!isResetMode && !isRegister">
+        🔓 ¿Olvidaste tu contraseña? Restáurala aquí
+      </button>
+
+      <button class="btn-link" (click)="toggleMode()" *ngIf="!isResetMode">
         {{ isRegister ? '¿Ya tienes cuenta? Inicia Sesión' : '¿No tienes cuenta? Regístrate gratis' }}
+      </button>
+
+      <button class="btn-link" (click)="toggleResetMode()" *ngIf="isResetMode">
+        ← Volver a Iniciar Sesión
       </button>
     </div>
   </div>

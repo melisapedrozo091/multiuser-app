@@ -66,4 +66,20 @@ export class AuthService {
     localStorage.removeItem('user_data');
     this.currentUserSubject.next(null);
   }
+
+  async resetPassword(email: string, newPassword?: string): Promise<{ message: string }> {
+    const res = await fetch(`${environment.apiBase}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, newPassword })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Error al solicitar restauración de contraseña');
+    }
+
+    return res.json();
+  }
 }
+
