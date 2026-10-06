@@ -1,37 +1,163 @@
-<div class="page-container">
-  <div class="header-section">
-    <h1>Gráfico de Ventas y Puntuaciones</h1>
-    <p class="subtitle">Visualización de métricas de rendimiento y satisfacción de clientes</p>
+<div class="metrics-container" style="max-width: 1100px; margin: 30px auto; padding: 0 20px;">
+  <!-- Header Bar -->
+  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; margin-bottom: 30px; background: var(--card-bg, #1e293b); padding: 25px 30px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+    <div>
+      <h2 style="font-size: 1.8rem; font-weight: 700; margin: 0; color: var(--text-color, #f8fafc); display: flex; align-items: center; gap: 10px;">
+        <i class="fa-solid fa-chart-line text-primary"></i> Panel de Métricas & Rendimiento Global
+      </h2>
+      <p style="color: #94a3b8; font-size: 0.9rem; margin: 5px 0 0 0;">
+        Cálculos dinámicos en tiempo real desde la base de datos MySQL en la nube (Exclusivo Administrador)
+      </p>
+    </div>
+
+    <!-- Admin Action Buttons -->
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+      <button (click)="openImportModal()" class="btn btn-secondary" style="padding: 10px 18px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 8px; background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); cursor: pointer;">
+        <i class="fa-solid fa-file-import"></i> Importar Cursos (CSV/JSON)
+      </button>
+
+      <button (click)="exportReportCsv()" class="btn btn-primary" style="padding: 10px 18px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+        <i class="fa-solid fa-file-export"></i> Exportar Informe a CSV
+      </button>
+    </div>
   </div>
 
-  <div class="metrics-grid">
-    <!-- Visual Bar Chart -->
-    <div class="card chart-card">
-      <h3>📈 Rendimiento de Ventas Mensuales ($)</h3>
-      <div class="bar-chart">
-        <div class="bar-group" *ngFor="let s of salesData">
-          <div class="bar-wrapper">
-            <div class="bar" [style.height.%]="(s.total / maxSales) * 100">
-              <span class="bar-value">${{ s.total }}</span>
-            </div>
-          </div>
-          <span class="bar-label">{{ s.month }}</span>
+  <!-- Loading State -->
+  <div *ngIf="loading" style="text-align: center; padding: 50px; color: #94a3b8;">
+    <i class="fa-solid fa-circle-notch fa-spin fa-2x text-primary me-2"></i> Calculando métricas globales desde la base de datos...
+  </div>
+
+  <!-- Metrics Dashboard Content -->
+  <ng-container *ngIf="!loading && metrics">
+    <!-- KPI Cards Grid -->
+    <div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 35px;">
+      <!-- Clientes Registrados -->
+      <div class="kpi-card" style="background: var(--card-bg, #1e293b); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 14px; padding: 22px; display: flex; align-items: center; gap: 18px;">
+        <div style="width: 55px; height: 55px; border-radius: 12px; background: rgba(99, 102, 241, 0.2); color: #818cf8; display: flex; align-items: center; justify-content: center; font-size: 1.6rem;">
+          <i class="fa-solid fa-users"></i>
+        </div>
+        <div>
+          <span style="font-size: 0.8rem; color: #94a3b8; display: block;">Clientes Registrados</span>
+          <span style="font-size: 1.8rem; font-weight: 700; color: #fff;">{{ metrics.totalClients }}</span>
+        </div>
+      </div>
+
+      <!-- Consultas en Foro -->
+      <div class="kpi-card" style="background: var(--card-bg, #1e293b); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 14px; padding: 22px; display: flex; align-items: center; gap: 18px;">
+        <div style="width: 55px; height: 55px; border-radius: 12px; background: rgba(16, 185, 129, 0.2); color: #34d399; display: flex; align-items: center; justify-content: center; font-size: 1.6rem;">
+          <i class="fa-solid fa-comments"></i>
+        </div>
+        <div>
+          <span style="font-size: 0.8rem; color: #94a3b8; display: block;">Consultas en el Foro</span>
+          <span style="font-size: 1.8rem; font-weight: 700; color: #fff;">{{ metrics.totalForumQueries }}</span>
+        </div>
+      </div>
+
+      <!-- Cursos en Catálogo -->
+      <div class="kpi-card" style="background: var(--card-bg, #1e293b); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 14px; padding: 22px; display: flex; align-items: center; gap: 18px;">
+        <div style="width: 55px; height: 55px; border-radius: 12px; background: rgba(245, 158, 11, 0.2); color: #fbbf24; display: flex; align-items: center; justify-content: center; font-size: 1.6rem;">
+          <i class="fa-solid fa-book-open"></i>
+        </div>
+        <div>
+          <span style="font-size: 0.8rem; color: #94a3b8; display: block;">Cursos en Catálogo</span>
+          <span style="font-size: 1.8rem; font-weight: 700; color: #fff;">{{ metrics.totalCourses }}</span>
+        </div>
+      </div>
+
+      <!-- Cursos Anulados / Arrepentimiento -->
+      <div class="kpi-card" style="background: var(--card-bg, #1e293b); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 14px; padding: 22px; display: flex; align-items: center; gap: 18px;">
+        <div style="width: 55px; height: 55px; border-radius: 12px; background: rgba(239, 68, 68, 0.2); color: #f87171; display: flex; align-items: center; justify-content: center; font-size: 1.6rem;">
+          <i class="fa-solid fa-rotate-left"></i>
+        </div>
+        <div>
+          <span style="font-size: 0.8rem; color: #94a3b8; display: block;">Cursos Anulados</span>
+          <span style="font-size: 1.8rem; font-weight: 700; color: #fff;">{{ metrics.coursesCanceled }}</span>
+        </div>
+      </div>
+
+      <!-- Satisfacción del Cliente -->
+      <div class="kpi-card" style="background: var(--card-bg, #1e293b); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 14px; padding: 22px; display: flex; align-items: center; gap: 18px;">
+        <div style="width: 55px; height: 55px; border-radius: 12px; background: rgba(168, 85, 247, 0.2); color: #c084fc; display: flex; align-items: center; justify-content: center; font-size: 1.6rem;">
+          <i class="fa-solid fa-star"></i>
+        </div>
+        <div>
+          <span style="font-size: 0.8rem; color: #94a3b8; display: block;">Satisfacción del Cliente</span>
+          <span style="font-size: 1.8rem; font-weight: 700; color: #fff;">{{ metrics.clientSatisfactionRate }}%</span>
         </div>
       </div>
     </div>
 
-    <!-- Rating Score List -->
-    <div class="card ratings-card">
-      <h3>⭐ Puntuación de Servicios</h3>
-      <div class="rating-item" *ngFor="let r of topRatings">
-        <div class="rating-info">
-          <strong>{{ r.product }}</strong>
-          <span class="reviews-count">{{ r.reviews }} evaluaciones</span>
-        </div>
-        <div class="rating-score">
-          <span class="stars">⭐⭐⭐⭐⭐</span>
-          <span class="score">{{ r.rating }} / 5</span>
-        </div>
+    <!-- RANKING DE CURSOS MÁS SOLICITADOS (ORDENADOS PRIMERO) -->
+    <div style="background: var(--card-bg, #1e293b); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+      <h3 style="font-size: 1.3rem; font-weight: 700; margin: 0 0 8px 0; color: var(--text-color, #fff); display: flex; align-items: center; gap: 10px;">
+        <i class="fa-solid fa-fire text-danger"></i> Cursos Más Solicitados / Ranking de Demanda
+      </h3>
+      <p style="color: #94a3b8; font-size: 0.88rem; margin-bottom: 25px;">
+        Los programas académicos con mayor tasa de inscripción y valoración por parte de los alumnos se listan primero.
+      </p>
+
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+          <thead>
+            <tr style="border-bottom: 2px solid rgba(255,255,255,0.1); color: #94a3b8; font-size: 0.8rem; text-transform: uppercase;">
+              <th style="padding: 12px;">Posición</th>
+              <th style="padding: 12px;">Curso / Programa</th>
+              <th style="padding: 12px;">Precio</th>
+              <th style="padding: 12px;">Valoración</th>
+              <th style="padding: 12px;">Inscriptos</th>
+              <th style="padding: 12px;">Satisfacción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let course of metrics.topDemandedCourses; let i = index" style="border-bottom: 1px solid rgba(255,255,255,0.05); color: #e2e8f0;">
+              <td style="padding: 14px 12px;">
+                <span class="badge" [style.background]="i === 0 ? 'linear-gradient(135deg, #f59e0b, #ef4444)' : 'rgba(99, 102, 241, 0.2)'" style="color: #fff; padding: 4px 10px; border-radius: 12px; font-weight: 700;">
+                  #{{ i + 1 }} {{ i === 0 ? '🏆 Top 1' : '' }}
+                </span>
+              </td>
+              <td style="padding: 14px 12px; font-weight: 600; color: #fff;">{{ course.name }}</td>
+              <td style="padding: 14px 12px; color: #10b981; font-weight: 700;">$ {{ course.price }} USD</td>
+              <td style="padding: 14px 12px;"><i class="fa-solid fa-star text-warning me-1"></i> {{ course.rating }} / 5.0</td>
+              <td style="padding: 14px 12px;"><i class="fa-solid fa-graduation-cap text-info me-1"></i> {{ course.enrolledCount }} alumnos</td>
+              <td style="padding: 14px 12px;"><span style="color: #34d399; font-weight: 600;">{{ course.satisfaction }}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- MODAL: IMPORTAR CURSOS MASIVAMENTE (ADMIN ONLY) -->
+  <div class="modal-backdrop" *ngIf="showImportModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+    <div class="modal-card" style="background: #1e293b; width: 100%; max-width: 650px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.15); padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="font-size: 1.4rem; font-weight: 700; margin: 0; color: #fff; display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-file-import text-primary"></i> Importar Nuevos Cursos
+        </h3>
+        <button (click)="closeImportModal()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer;">&times;</button>
+      </div>
+
+      <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 15px;">
+        Pega a continuación la lista de cursos nuevos en formato JSON para registrarlos automáticamente en la base de datos MySQL de FreeSQLDatabase:
+      </p>
+
+      <textarea [(ngModel)]="importJsonText" rows="9" style="width: 100%; padding: 15px; font-family: monospace; font-size: 0.85rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: #0f172a; color: #38bdf8; margin-bottom: 20px; resize: vertical;"></textarea>
+
+      <div class="alert alert-danger" *ngIf="importErrorMsg" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 12px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 15px;">
+        ⚠️ {{ importErrorMsg }}
+      </div>
+
+      <div class="alert alert-success" *ngIf="importSuccessMsg" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; padding: 12px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 15px;">
+        ✅ {{ importSuccessMsg }}
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <button (click)="closeImportModal()" class="btn btn-secondary" style="padding: 10px 20px; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; border: none; cursor: pointer;">
+          Cancelar
+        </button>
+        <button (click)="onProcessImport()" [disabled]="importing" class="btn btn-primary" style="padding: 10px 24px; border-radius: 8px; background: #6366f1; color: #fff; border: none; font-weight: 600; cursor: pointer;">
+          {{ importing ? 'Importando...' : '📥 Procesar e Importar Cursos' }}
+        </button>
       </div>
     </div>
   </div>

@@ -39,7 +39,8 @@ export const routes: Routes = [
   },
   {
     path: 'metrics',
-    loadComponent: () => import('./features/metrics/metrics-dashboard/metrics-dashboard.component').then(m => m.MetricsDashboardComponent)
+    loadComponent: () => import('./features/metrics/metrics-dashboard/metrics-dashboard.component').then(m => m.MetricsDashboardComponent),
+    canActivate: [roleGuard(['ADMIN'])]
   },
   {
     path: 'admin/users',
