@@ -9,6 +9,8 @@ import { CsvExportService } from '../../../core/services/csv-export.service';
 import { FilterPipe } from '../../../core/pipes/filter.pipe';
 import { ProductCardComponent } from '../../../shared/components/product-card/product-card.component';
 
+import { CurrencyService, CurrencyMode } from '../../../core/services/currency.service';
+
 @Component({
   selector: 'app-product-list',
   standalone: true,
@@ -19,12 +21,23 @@ import { ProductCardComponent } from '../../../shared/components/product-card/pr
 export class ProductListComponent implements OnInit {
   products: Product[] = [];
   searchText = '';
+  selectedCategory = 'TODOS';
   loading = true;
   error: string | null = null;
+
+  categories = [
+    { label: 'Todos los Cursos', value: 'TODOS', icon: '🌟' },
+    { label: 'Fullstack & Web', value: 'FULLSTACK', icon: '💻' },
+    { label: 'TypeScript', value: 'TYPESCRIPT', icon: '⚡' },
+    { label: 'DevOps & Cloud', value: 'DEVOPS', icon: '🐳' },
+    { label: 'Inteligencia Artificial', value: 'IA', icon: '🤖' },
+    { label: 'Seguridad', value: 'SEGURIDAD', icon: '🛡️' }
+  ];
 
   constructor(
     private productService: ProductService,
     public auth: AuthService,
+    public currencyService: CurrencyService,
     private csvExport: CsvExportService,
     private router: Router
   ) {}
@@ -33,32 +46,52 @@ export class ProductListComponent implements OnInit {
     await this.loadProducts();
   }
 
+  setCurrency(mode: CurrencyMode): void {
+    this.currencyService.setCurrency(mode);
+  }
+
+  setCategory(cat: string): void {
+    this.selectedCategory = cat;
+  }
+
+  get filteredProducts(): Product[] {
+    const filterPipe = new FilterPipe();
+    let list = filterPipe.transform(this.products, this.searchText, ['name', 'description']);
+
+    if (this.selectedCategory !== 'TODOS') {
+      list = list.filter(p => {
+        const name = p.name.toLowerCase();
+        if (this.selectedCategory === 'FULLSTACK') return name.includes('fullstack') || name.includes('web');
+        if (this.selectedCategory === 'TYPESCRIPT') return name.includes('typescript') || name.includes('código');
+        if (this.selectedCategory === 'DEVOPS') return name.includes('devops') || name.includes('docker');
+        if (this.selectedCategory === 'IA') return name.includes('inteligencia') || name.includes('ia');
+        if (this.selectedCategory === 'SEGURIDAD') return name.includes('seguridad') || name.includes('auth');
+        return true;
+      });
+    }
+
+    return list;
+  }
+
   async loadProducts(): Promise<void> {
     this.loading = true;
     try {
       this.products = await this.productService.getAll();
     } catch (err: any) {
       this.error = 'No se pudieron cargar los productos del backend.';
-      // Seed initial sample data if backend DB is empty or disconnected
-      this.products = [
-        { id: 1, name: 'Servicio Cloud Premium', description: 'Infraestructura en la nube con alta disponibilidad 99.9%', price: 299.99, stock: 15 },
-        { id: 2, name: 'Licencia Software Enterprise', description: 'Acceso ilimitado a herramientas de auditoría', price: 899.00, stock: 3 },
-        { id: 3, name: 'Consultoría DevOps (Hora)', description: 'Asesoramiento técnico personalizado por expertos', price: 120.00, stock: 25 },
-        { id: 4, name: 'Paquete de Mantenimiento', description: 'Soporte 24/7 y actualizaciones críticas', price: 450.00, stock: 2 }
-      ];
+      this.products = [];
     } finally {
       this.loading = false;
     }
   }
 
   exportCsv(): void {
-    const filterPipe = new FilterPipe();
-    const filtered = filterPipe.transform(this.products, this.searchText, ['name', 'description']);
-    this.csvExport.exportProductsToCsv(filtered);
+    this.csvExport.exportProductsToCsv(this.filteredProducts);
   }
 
   onBuyProduct(product: Product): void {
-    alert(`¡Gracias por adquirir "${product.name}" por $${product.price}!`);
+    const formattedPrice = this.currencyService.format(product.price);
+    alert(`🎓 ¡Felicidades! Te has inscrito en "${product.name}" por ${formattedPrice}. Revisa tu correo para el acceso a las clases.`);
   }
 
   onEditProduct(product: Product): void {

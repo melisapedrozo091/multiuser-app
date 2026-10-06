@@ -1,35 +1,82 @@
 <div class="page-container">
-  <div class="header-section">
-    <div>
-      <h1>Catálogo de Productos y Servicios</h1>
-      <p class="subtitle">Gestiona y explora las ofertas disponibles en tiempo real</p>
+  
+  <!-- HERO BANNER FOR COURSE ACADEMY LANDING -->
+  <div class="hero-banner">
+    <div class="hero-content">
+      <span class="hero-badge">🚀 Formación Profesional Tech 2026</span>
+      <h1 class="hero-title">Academia de Cursos Online & Certificaciones</h1>
+      <p class="hero-subtitle">
+        Desarrolla habilidades de alto impacto en Fullstack, DevOps, Inteligencia Artificial y Arquitectura de Software con clases prácticas.
+      </p>
+      <div class="hero-stats">
+        <div class="stat-item"><span class="stat-icon">🎓</span> 8 Cursos Oficiales</div>
+        <div class="stat-item"><span class="stat-icon">📜</span> Certificados Incluidos</div>
+        <div class="stat-item"><span class="stat-icon">♾️</span> Acceso de por Vida</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTROL BAR: SEARCH, CURRENCY TOGGLE & CSV EXPORT -->
+  <div class="controls-bar card">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        [(ngModel)]="searchText"
+        placeholder="Buscar curso por nombre o temas clave..."
+        class="search-input"
+      />
     </div>
 
-    <div class="actions">
-      <button class="btn btn-secondary" (click)="exportCsv()">📥 Exportar a CSV</button>
+    <!-- CURRENCY SELECTOR (USD / ARS) -->
+    <div class="currency-switcher">
+      <span class="currency-label">Moneda:</span>
+      <div class="currency-pills">
+        <button
+          class="pill-btn"
+          [class.active]="currencyService.currentCurrency === 'USD'"
+          (click)="setCurrency('USD')"
+        >
+          💵 USD ($)
+        </button>
+        <button
+          class="pill-btn"
+          [class.active]="currencyService.currentCurrency === 'ARS'"
+          (click)="setCurrency('ARS')"
+        >
+          🇦🇷 ARS ($)
+        </button>
+      </div>
+    </div>
+
+    <div class="action-buttons">
+      <button class="btn btn-secondary" (click)="exportCsv()">📥 Exportar CSV</button>
       <button class="btn btn-primary" *ngIf="isAdmin" (click)="loadProducts()">🔄 Recargar</button>
     </div>
   </div>
 
-  <div class="filter-bar card">
-    <div class="search-box">
-      <span>🔍</span>
-      <input
-        type="text"
-        [(ngModel)]="searchText"
-        placeholder="Filtrar en tiempo real por nombre o descripción..."
-        class="search-input"
-      />
-    </div>
+  <!-- CATEGORIES FILTER PILLS -->
+  <div class="categories-bar">
+    <button
+      *ngFor="let cat of categories"
+      class="category-chip"
+      [class.active]="selectedCategory === cat.value"
+      (click)="setCategory(cat.value)"
+    >
+      <span class="cat-icon">{{ cat.icon }}</span> {{ cat.label }}
+    </button>
   </div>
 
+  <!-- LOADING SPINNER -->
   <div class="loading-spinner" *ngIf="loading">
-    Cargando productos...
+    <div class="spinner"></div>
+    <p>Cargando el catálogo de cursos...</p>
   </div>
 
+  <!-- COURSES GRID -->
   <div class="products-grid" *ngIf="!loading">
     <app-product-card
-      *ngFor="let prod of (products | filter:searchText:['name', 'description'])"
+      *ngFor="let prod of filteredProducts"
       [product]="prod"
       [isAdmin]="isAdmin"
       (buy)="onBuyProduct($event)"
@@ -39,7 +86,8 @@
     </app-product-card>
   </div>
 
-  <div class="empty-state card" *ngIf="!loading && (products | filter:searchText:['name', 'description']).length === 0">
-    <p>No se encontraron productos que coincidan con la búsqueda "{{ searchText }}".</p>
+  <!-- EMPTY STATE -->
+  <div class="empty-state card" *ngIf="!loading && filteredProducts.length === 0">
+    <p>No se encontraron cursos que coincidan con la búsqueda seleccionada.</p>
   </div>
 </div>
