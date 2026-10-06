@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Product } from '../../../core/models/app-models';
 import { ProductService } from '../../../core/services/product.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -21,7 +21,7 @@ export interface CourseSyllabus {
 @Component({
   selector: 'app-product-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, FilterPipe, ProductCardComponent],
+  imports: [CommonModule, FormsModule, FilterPipe, ProductCardComponent, RouterLink],
   templateUrl: './product-list.component.html',
   styleUrls: ['./product-list.component.css']
 })
@@ -184,6 +184,14 @@ export class ProductListComponent implements OnInit {
     } finally {
       this.loading = false;
     }
+  }
+
+  goToFaq(): void {
+    this.router.navigate(['/faq']);
+  }
+
+  goToChat(): void {
+    this.router.navigate(['/chat']);
   }
 
   exportCsv(): void {
