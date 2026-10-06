@@ -12,6 +12,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/faq/faq.component').then(m => m.FaqComponent)
   },
   {
+    path: 'arrepentimiento',
+    loadComponent: () => import('./features/arrepentimiento/arrepentimiento.component').then(m => m.ArrepentimientoComponent)
+  },
+  {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
   },

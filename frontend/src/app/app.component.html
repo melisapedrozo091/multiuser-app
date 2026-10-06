@@ -82,9 +82,9 @@
 
       <!-- BOTÓN DE ARREPENTIMIENTO SEGÚN LEY 24.240 / 26.361 -->
       <div class="arrepentimiento-box">
-        <button class="btn-arrepentimiento" (click)="openArrepentimiento()">
+        <a routerLink="/arrepentimiento" class="btn-arrepentimiento">
           <span class="arrepentimiento-icon">🔄</span> Botón de arrepentimiento
-        </button>
+        </a>
       </div>
     </div>
 
@@ -114,49 +114,3 @@
     </div>
   </div>
 </footer>
-
-<!-- MODAL: FORMULARIO DE BOTÓN DE ARREPENTIMIENTO -->
-<div class="modal-overlay" *ngIf="showArrepentimientoModal" (click)="closeArrepentimiento()">
-  <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
-    <button class="close-btn" (click)="closeArrepentimiento()">✖</button>
-    <div class="modal-header text-center">
-      <span class="arrepentimiento-modal-icon">🔄</span>
-      <h2>Solicitud de Arrepentimiento</h2>
-      <p class="modal-subtext">
-        Conforme a la Ley 24.240 y 26.361 de Defensa del Consumidor, contás con 10 días corridos para revocar tu compra.
-      </p>
-    </div>
-
-    <div class="modal-body" *ngIf="!arrepentimientoSent">
-      <div class="form-group">
-        <label>Correo Electrónico de la Compra (*)</label>
-        <input type="email" [(ngModel)]="arrepentimientoData.email" class="form-control" placeholder="tu@email.com" />
-      </div>
-
-      <div class="form-group">
-        <label>DNI del Titular (*)</label>
-        <input type="text" [(ngModel)]="arrepentimientoData.dni" class="form-control" placeholder="Ej: 38123456" />
-      </div>
-
-      <div class="form-group">
-        <label>Código de Pedido / Inscripción (Opcional)</label>
-        <input type="text" [(ngModel)]="arrepentimientoData.code" class="form-control" placeholder="Ej: CURSO-1092" />
-      </div>
-
-      <div class="form-group">
-        <label>Motivo de la Revocación (Opcional)</label>
-        <textarea [(ngModel)]="arrepentimientoData.reason" class="form-control" rows="2" placeholder="Comentario opcional..."></textarea>
-      </div>
-    </div>
-
-    <div class="modal-body text-center" *ngIf="arrepentimientoSent">
-      <div class="spinner"></div>
-      <p>Procesando solicitud de arrepentimiento y generando número de trámite...</p>
-    </div>
-
-    <div class="modal-footer justify-center" *ngIf="!arrepentimientoSent">
-      <button class="btn btn-secondary" (click)="closeArrepentimiento()">Cancelar</button>
-      <button class="btn btn-primary" (click)="sendArrepentimiento()">Solicitar Revocación</button>
-    </div>
-  </div>
-</div>

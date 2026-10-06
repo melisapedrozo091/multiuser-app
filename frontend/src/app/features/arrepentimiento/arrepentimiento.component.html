@@ -1,0 +1,66 @@
+<div class="arrepentimiento-container">
+  <div class="arrepentimiento-card card">
+    <div class="header-section text-center">
+      <span class="icon-badge">🔄</span>
+      <h1>Botón de Arrepentimiento</h1>
+      <p class="subtitle">
+        Conforme a la Ley N° 24.240 y Ley N° 26.361 de Defensa del Consumidor, contás con 10 (diez) días corridos desde la contratación del servicio o curso para revocar tu compra sin penalidad alguna.
+      </p>
+    </div>
+
+    <!-- FORMULARIO DE REVOCACIÓN -->
+    <div class="form-section" *ngIf="!requestSent">
+      <div class="form-group">
+        <label>Nombre y Apellido Completo (*)</label>
+        <input type="text" [(ngModel)]="formData.fullName" placeholder="Ej: Melisa Pedrozo" class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label>Correo Electrónico de la Compra (*)</label>
+        <input type="email" [(ngModel)]="formData.email" placeholder="tu&#64;email.com" class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label>DNI / Documento (*)</label>
+        <input type="text" [(ngModel)]="formData.dni" placeholder="Ej: 38123456" class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label>Código de Pedido / Nombre del Curso (Opcional)</label>
+        <input type="text" [(ngModel)]="formData.orderCode" placeholder="Ej: Curso Fullstack Web" class="form-control" />
+      </div>
+
+      <div class="form-group">
+        <label>Motivo de la Revocación (Opcional)</label>
+        <textarea [(ngModel)]="formData.reason" placeholder="Podés dejarnos tus comentarios para mejorar el servicio..." class="form-control" rows="3"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <a routerLink="/landing" class="btn btn-secondary">Volver al Inicio</a>
+        <button (click)="sendRequest()" class="btn btn-primary btn-lg">Solicitar Revocación</button>
+      </div>
+    </div>
+
+    <!-- CONFIRMACIÓN DE SOLICITUD -->
+    <div class="success-section text-center" *ngIf="requestSent">
+      <span class="success-icon">✅</span>
+      <h2>¡Solicitud Recibida Exitosamente!</h2>
+      <p class="success-msg">
+        Tu trámite de revocación ha sido registrado correctamente en nuestro sistema.
+      </p>
+
+      <div class="tracking-box card">
+        <span class="label">Número de Trámite:</span>
+        <code class="tracking-code">{{ trackingNumber }}</code>
+        <p class="small-info">
+          Se envió el comprobante oficial a <strong>{{ formData.email }}</strong>. El reintegro se acreditará en tu medio de pago original en las próximas 48 a 72 horas hábiles.
+        </p>
+      </div>
+
+      <div class="form-actions justify-center">
+        <a routerLink="/landing" class="btn btn-primary">Volver al Catálogo de Cursos</a>
+        <button (click)="resetForm()" class="btn btn-secondary">Nueva Solicitud</button>
+      </div>
+    </div>
+  </div>
+</div>
