@@ -9,10 +9,13 @@ export class ChatService {
 
   private getHeaders(): HeadersInit {
     const token = this.auth.getToken();
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
     };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
   }
 
   async getMessages(): Promise<ChatMessage[]> {
@@ -29,7 +32,10 @@ export class ChatService {
       headers: this.getHeaders(),
       body: JSON.stringify({ message })
     });
-    if (!res.ok) throw new Error('Error al enviar mensaje');
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.error || 'Error al enviar mensaje');
+    }
     return res.json();
   }
 }

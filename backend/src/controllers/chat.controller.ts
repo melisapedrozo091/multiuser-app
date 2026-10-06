@@ -1,49 +1,47 @@
 import { Response } from 'express';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
-
-export interface ChatMessage {
-  id: string;
-  senderUid: string;
-  senderName: string;
-  message: string;
-  timestamp: string;
-}
-
-// In-memory messages store for real-time fallback
-const messagesStore: ChatMessage[] = [
-  {
-    id: '1',
-    senderUid: 'system',
-    senderName: 'Sistema Bot',
-    message: '¡Bienvenido al canal general del Foro / Chat!',
-    timestamp: new Date().toISOString()
-  }
-];
+import { prisma } from '../prisma/client';
 
 export const getMessages = async (_req: AuthenticatedRequest, res: Response) => {
-  res.json(messagesStore);
+  try {
+    const messages = await prisma.chatMessage.findMany({
+      orderBy: { timestamp: 'asc' }
+    });
+    res.json(messages);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Error al obtener mensajes', details: error.message });
+  }
 };
 
 export const postMessage = async (req: AuthenticatedRequest, res: Response) => {
   const { message } = req.body;
   const user = req.user;
 
-  if (!message || typeof message !== 'string') {
+  if (!message || typeof message !== 'string' || !message.trim()) {
     return res.status(400).json({ error: 'Mensaje requerido' });
   }
 
-  const newMessage: ChatMessage = {
-    id: Date.now().toString(),
-    senderUid: user?.uid || 'anon',
-    senderName: user?.email ? user.email.split('@')[0] : 'Usuario',
-    message,
-    timestamp: new Date().toISOString()
-  };
-
-  messagesStore.push(newMessage);
-  if (messagesStore.length > 100) {
-    messagesStore.shift();
+  if (!user || !user.uid) {
+    return res.status(401).json({ error: 'Debes iniciar sesión para publicar en el foro' });
   }
 
-  res.status(201).json(newMessage);
+  try {
+    const userProfile = await prisma.user.findUnique({
+      where: { id: user.uid }
+    });
+
+    const senderName = userProfile?.displayName || userProfile?.email || user.email || 'Usuario Registrado';
+
+    const newMessage = await prisma.chatMessage.create({
+      data: {
+        senderUid: user.uid,
+        senderName,
+        message: message.trim()
+      }
+    });
+
+    res.status(201).json(newMessage);
+  } catch (error: any) {
+    res.status(500).json({ error: 'Error al guardar mensaje en la base de datos', details: error.message });
+  }
 };

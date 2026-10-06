@@ -14,15 +14,12 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(helmet());
 app.use(express.json());
 
-// Rutas públicas
+// Rutas (cada router aplica firebaseAuthMiddleware en los endpoints que requieren sesión)
 app.use('/api/auth', authRoutes);
-
-// Protegemos todas las rutas siguientes con Firebase Auth
-app.use(firebaseAuthMiddleware);
-
-// Rutas protegidas
 app.use('/api/products', productRoutes);
-app.use('/api/admin', adminRoutes);
 app.use('/api/chat', chatRoutes);
+
+// Rutas 100% administrativas protegidas
+app.use('/api/admin', firebaseAuthMiddleware, adminRoutes);
 
 export default app;

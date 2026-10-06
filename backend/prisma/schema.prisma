@@ -28,3 +28,12 @@ model Product {
   ownerId     String
   owner       User     @relation(fields: [ownerId], references: [id])
 }
+
+model ChatMessage {
+  id         String   @id @default(cuid())
+  senderUid  String
+  senderName String
+  message    String
+  timestamp  DateTime @default(now())
+}
+

@@ -94,6 +94,31 @@ async function main() {
     ]
   });
 
+  // Seed sample forum chat messages if none exist
+  const existingMsgs = await prisma.chatMessage.count();
+  if (existingMsgs === 0) {
+    await prisma.chatMessage.createMany({
+      data: [
+        {
+          senderUid: admin.id,
+          senderName: 'Soporte Academia Tech',
+          message: '¡Bienvenido a la comunidad de Academia Tech! Deja aquí tus dudas sobre los cursos.'
+        },
+        {
+          senderUid: client.id,
+          senderName: 'Carlos López',
+          message: '¿El curso de Fullstack en Angular & Node.js incluye proyectos reales desplegados?'
+        },
+        {
+          senderUid: admin.id,
+          senderName: 'Administrador General',
+          message: '¡Hola Carlos! Sí, en el último módulo construimos y desplegamos la app completa a producción.'
+        }
+      ]
+    });
+  }
+
+
   console.log('✅ Base de datos sembrada con éxito.');
 }
 
