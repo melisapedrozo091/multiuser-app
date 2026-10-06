@@ -5,10 +5,12 @@ import { ChatMessage } from '../../../core/models/app-models';
 import { ChatService } from '../../../core/services/chat.service';
 import { AuthService } from '../../../core/services/auth.service';
 
+import { RouterLink } from '@angular/router';
+
 @Component({
   selector: 'app-chat-room',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './chat-room.component.html',
   styleUrls: ['./chat-room.component.css']
 })

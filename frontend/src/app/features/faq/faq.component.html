@@ -1,0 +1,57 @@
+<div class="faq-container">
+  <div class="faq-hero">
+    <span class="badge">❓ Centro de Ayuda & Respuestas</span>
+    <h1>Preguntas Frecuentes (FAQ)</h1>
+    <p class="subtitle">
+      Encuentra respuestas claras sobre nuestros cursos, pagos, certificados y modalidades de estudio.
+    </p>
+
+    <div class="search-box card">
+      <span>🔍</span>
+      <input
+        type="text"
+        [(ngModel)]="searchText"
+        placeholder="Buscar pregunta por palabras clave (ej: certificado, pagos, inscripción)..."
+        class="search-input"
+      />
+    </div>
+  </div>
+
+  <div class="faq-categories">
+    <div *ngFor="let cat of categories; let cIdx = index" class="category-block card">
+      <div class="category-header">
+        <span class="category-icon">{{ cat.icon }}</span>
+        <h2>{{ cat.name }}</h2>
+      </div>
+
+      <div class="questions-list">
+        <div
+          *ngFor="let item of cat.items; let iIdx = index"
+          class="faq-card"
+          [class.open]="item.open"
+          (click)="toggleItem(cIdx, iIdx)"
+        >
+          <div class="faq-q">
+            <h3>{{ item.question }}</h3>
+            <span class="toggle-arrow">{{ item.open ? '▲' : '▼' }}</span>
+          </div>
+          <div class="faq-a" *ngIf="item.open">
+            <p>{{ item.answer }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTACT FOOTER -->
+  <div class="contact-banner card">
+    <div class="banner-text">
+      <h3>¿No encontraste lo que buscabas?</h3>
+      <p>Nuestro equipo de soporte y ventas está listo para asesorarte en tiempo real.</p>
+    </div>
+    <div class="banner-buttons">
+      <a routerLink="/landing" class="btn btn-secondary">🎓 Ver Catálogo de Cursos</a>
+      <a href="mailto:soporte@academiatech.com" class="btn btn-primary">✉️ Contactar Soporte</a>
+    </div>
+  </div>
+</div>

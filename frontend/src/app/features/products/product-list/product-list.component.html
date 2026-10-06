@@ -50,7 +50,7 @@
     </div>
 
     <div class="action-buttons">
-      <button class="btn btn-secondary" (click)="exportCsv()">📥 Exportar CSV</button>
+      <button class="btn btn-secondary" *ngIf="isAdmin" (click)="exportCsv()">📥 Exportar CSV</button>
       <button class="btn btn-primary" *ngIf="isAdmin" (click)="loadProducts()">🔄 Recargar</button>
     </div>
   </div>

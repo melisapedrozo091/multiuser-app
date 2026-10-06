@@ -19,15 +19,23 @@
       </div>
     </div>
 
-    <div class="chat-input-area">
+    <div class="chat-input-area" *ngIf="auth.currentUser">
       <input
         type="text"
         [(ngModel)]="newMessage"
         (keyup.enter)="onSend()"
-        placeholder="Escribe tu mensaje aquí y presiona Enter..."
+        placeholder="Escribe tu consulta o respuesta aquí y presiona Enter..."
         class="chat-input"
       />
-      <button class="btn btn-primary" (click)="onSend()">Enviar</button>
+      <button class="btn btn-primary" (click)="onSend()">Enviar Mensaje</button>
+    </div>
+
+    <div class="login-prompt-banner" *ngIf="!auth.currentUser">
+      <div class="prompt-text">
+        <span>💬 <strong>Foro de la Comunidad en Modo Lectura:</strong></span>
+        <p>Puedes leer todas las consultas de la comunidad. Para publicar tu pregunta o responder, por favor inicia sesión.</p>
+      </div>
+      <a routerLink="/login" class="btn btn-primary">🔑 Iniciar Sesión para Comentar</a>
     </div>
   </div>
 </div>

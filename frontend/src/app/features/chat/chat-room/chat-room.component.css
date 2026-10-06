@@ -88,3 +88,21 @@ h1 {
 .chat-input:focus {
   outline: 2px solid var(--primary);
 }
+
+.login-prompt-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-hover, rgba(99, 102, 241, 0.08));
+  border: 1px dashed var(--primary, #6366f1);
+  border-radius: 12px;
+  flex-wrap: wrap;
+}
+
+.prompt-text p {
+  margin: 0.2rem 0 0 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}

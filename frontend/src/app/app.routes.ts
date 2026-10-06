@@ -2,7 +2,15 @@ import { Routes } from '@angular/router';
 import { roleGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'products', pathMatch: 'full' },
+  { path: '', redirectTo: 'landing', pathMatch: 'full' },
+  {
+    path: 'landing',
+    loadComponent: () => import('./features/products/product-list/product-list.component').then(m => m.ProductListComponent)
+  },
+  {
+    path: 'faq',
+    loadComponent: () => import('./features/faq/faq.component').then(m => m.FaqComponent)
+  },
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
@@ -38,5 +46,5 @@ export const routes: Routes = [
     path: 'profile',
     loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent)
   },
-  { path: '**', redirectTo: 'products' }
+  { path: '**', redirectTo: 'landing' }
 ];

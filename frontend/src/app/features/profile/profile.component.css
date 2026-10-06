@@ -54,3 +54,11 @@ h2 {
   font-size: 0.8rem;
   font-weight: 600;
 }
+
+.profile-actions {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: center;
+}

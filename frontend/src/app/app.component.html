@@ -1,17 +1,16 @@
 <header class="navbar">
-  <div class="nav-brand" routerLink="/products">
-    <span class="logo">⚡</span>
-    <span class="brand-text">MultiUser App</span>
+  <div class="nav-brand" routerLink="/landing">
+    <span class="logo">🎓</span>
+    <span class="brand-text">Academia Tech</span>
   </div>
 
   <nav class="nav-links">
-    <ng-container *ngIf="auth.currentUser">
-      <a routerLink="/products" routerLinkActive="active">📦 Productos</a>
-      <a routerLink="/chat" routerLinkActive="active">💬 Foro / Chat</a>
-      <a routerLink="/metrics" routerLinkActive="active">📊 Métricas</a>
-      <a routerLink="/admin/users" routerLinkActive="active" *ngIf="auth.currentUser?.role === 'ADMIN'">🛡️ Admin Usuarios</a>
-      <a routerLink="/profile" routerLinkActive="active">👤 Mi Perfil</a>
-    </ng-container>
+    <a routerLink="/landing" routerLinkActive="active">🎓 Cursos</a>
+    <a routerLink="/faq" routerLinkActive="active">❓ FAQ</a>
+    <a routerLink="/chat" routerLinkActive="active">💬 Foro Comunidad</a>
+    <a routerLink="/metrics" routerLinkActive="active" *ngIf="auth.currentUser">📊 Métricas</a>
+    <a routerLink="/admin/users" routerLinkActive="active" *ngIf="auth.currentUser?.role === 'ADMIN'">🛡️ Admin Usuarios</a>
+    <a routerLink="/profile" routerLinkActive="active" *ngIf="auth.currentUser">👤 Mi Perfil</a>
   </nav>
 
   <div class="nav-actions">
@@ -28,6 +27,136 @@
   </div>
 </header>
 
-<main>
+<main class="main-content">
   <router-outlet></router-outlet>
 </main>
+
+<!-- FOOTER MULTICOLUMNA ESTILO E-COMMERCE -->
+<footer class="app-footer">
+  <div class="footer-columns">
+    <!-- COLUMNA 1: AYUDA -->
+    <div class="footer-col">
+      <h4 class="col-title">Ayuda</h4>
+      <ul class="footer-menu">
+        <li><a routerLink="/faq">Preguntas Frecuentes</a></li>
+        <li><a routerLink="/landing">Promociones & Becas</a></li>
+        <li><a routerLink="/landing">Guía de Temarios y Cursos</a></li>
+        <li><a routerLink="/faq">Políticas de Certificación</a></li>
+        <li><a href="mailto:soporte@academiatech.com">Soporte Técnico 24/7</a></li>
+      </ul>
+    </div>
+
+    <!-- COLUMNA 2: INSCRIPCIÓN & PAGOS -->
+    <div class="footer-col">
+      <h4 class="col-title">Inscripción & Pagos</h4>
+      <ul class="footer-menu">
+        <li><a routerLink="/landing">Información de tu Inscripción</a></li>
+        <li><a routerLink="/faq">Formas de Pago (USD / ARS)</a></li>
+        <li><a routerLink="/landing">Garantía de Aprendizaje</a></li>
+        <li><a routerLink="/landing">Compra Segura SSL</a></li>
+        <li><a routerLink="/profile" *ngIf="auth.currentUser">Descargar Plan de Estudios</a></li>
+      </ul>
+    </div>
+
+    <!-- COLUMNA 3: INSTITUCIONAL -->
+    <div class="footer-col">
+      <h4 class="col-title">Institucional</h4>
+      <ul class="footer-menu">
+        <li><a routerLink="/landing">Sobre Academia Tech</a></li>
+        <li><a routerLink="/landing">Alianzas con Empresas Tech</a></li>
+        <li><a href="mailto:ventas@academiatech.com">Sumate como Instructor</a></li>
+        <li><a routerLink="/landing">Trabaja con Nosotros</a></li>
+        <li><a routerLink="/faq">Responsabilidad Social</a></li>
+      </ul>
+    </div>
+
+    <!-- COLUMNA 4: LEGALES -->
+    <div class="footer-col">
+      <h4 class="col-title">Legales</h4>
+      <ul class="footer-menu">
+        <li><a routerLink="/faq">Política de Privacidad</a></li>
+        <li><a routerLink="/faq">Términos y Condiciones</a></li>
+        <li><a routerLink="/faq">Libro de Quejas y Sugerencias</a></li>
+        <li><a routerLink="/faq">Defensa del Consumidor</a></li>
+      </ul>
+
+      <!-- BOTÓN DE ARREPENTIMIENTO SEGÚN LEY 24.240 / 26.361 -->
+      <div class="arrepentimiento-box">
+        <button class="btn-arrepentimiento" (click)="openArrepentimiento()">
+          <span class="arrepentimiento-icon">🔄</span> Botón de arrepentimiento
+        </button>
+      </div>
+    </div>
+
+    <!-- COLUMNA 5: CONTACTO -->
+    <div class="footer-col">
+      <h4 class="col-title">Contacto</h4>
+      <ul class="footer-contact">
+        <li><a routerLink="/faq">✉️ Formulario de Contacto</a></li>
+        <li><a href="mailto:ventas@academiatech.com">✉️ ventas@academiatech.com</a></li>
+        <li><a href="mailto:soporte@academiatech.com">🛠️ soporte@academiatech.com</a></li>
+        <li><a href="tel:08103338324">📞 0810-333-TECH (8324)</a></li>
+        <li><a href="https://wa.me/5491155551234" target="_blank">💬 WhatsApp Directo</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- BARRA INFERIOR CON LOGOS / BADGES DE CONFIANZA -->
+  <div class="footer-bottom">
+    <div class="footer-legal-text">
+      <span>Desarrollado para Academia Tech © 2026. Todos los derechos reservados.</span>
+    </div>
+    <div class="trust-badges">
+      <span class="trust-item">💳 MercadoPago</span>
+      <span class="trust-item">🔒 SSL 256-Bit</span>
+      <span class="trust-item">🇦🇷 CACE</span>
+      <span class="trust-item">🛡️ Defensa del Consumidor</span>
+    </div>
+  </div>
+</footer>
+
+<!-- MODAL: FORMULARIO DE BOTÓN DE ARREPENTIMIENTO -->
+<div class="modal-overlay" *ngIf="showArrepentimientoModal" (click)="closeArrepentimiento()">
+  <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
+    <button class="close-btn" (click)="closeArrepentimiento()">✖</button>
+    <div class="modal-header text-center">
+      <span class="arrepentimiento-modal-icon">🔄</span>
+      <h2>Solicitud de Arrepentimiento</h2>
+      <p class="modal-subtext">
+        Conforme a la Ley 24.240 y 26.361 de Defensa del Consumidor, contás con 10 días corridos para revocar tu compra.
+      </p>
+    </div>
+
+    <div class="modal-body" *ngIf="!arrepentimientoSent">
+      <div class="form-group">
+        <label>Correo Electrónico de la Compra (*)</label>
+        <input type="email" [(ngModel)]="arrepentimientoData.email" class="form-control" placeholder="tu@email.com" />
+      </div>
+
+      <div class="form-group">
+        <label>DNI del Titular (*)</label>
+        <input type="text" [(ngModel)]="arrepentimientoData.dni" class="form-control" placeholder="Ej: 38123456" />
+      </div>
+
+      <div class="form-group">
+        <label>Código de Pedido / Inscripción (Opcional)</label>
+        <input type="text" [(ngModel)]="arrepentimientoData.code" class="form-control" placeholder="Ej: CURSO-1092" />
+      </div>
+
+      <div class="form-group">
+        <label>Motivo de la Revocación (Opcional)</label>
+        <textarea [(ngModel)]="arrepentimientoData.reason" class="form-control" rows="2" placeholder="Comentario opcional..."></textarea>
+      </div>
+    </div>
+
+    <div class="modal-body text-center" *ngIf="arrepentimientoSent">
+      <div class="spinner"></div>
+      <p>Procesando solicitud de arrepentimiento y generando número de trámite...</p>
+    </div>
+
+    <div class="modal-footer justify-center" *ngIf="!arrepentimientoSent">
+      <button class="btn btn-secondary" (click)="closeArrepentimiento()">Cancelar</button>
+      <button class="btn btn-primary" (click)="sendArrepentimiento()">Solicitar Revocación</button>
+    </div>
+  </div>
+</div>
