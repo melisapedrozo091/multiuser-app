@@ -1,11 +1,15 @@
 <div class="card product-card" [appHighlight]="'rgba(239, 68, 68, 0.15)'" [highlightCondition]="product.stock < 5">
-  <div class="badge" *ngIf="product.stock < 5">⚡ ¡Últimos Cupos! ({{ product.stock }})</div>
+  <div class="badge bg-danger text-white" *ngIf="product.stock < 5">
+    <i class="fa-solid fa-bolt me-1"></i> ¡Últimos Cupos! ({{ product.stock }})
+  </div>
 
   <div class="card-header">
     <div class="category-icon">{{ categoryIcon }}</div>
     <div class="title-container">
       <h3 class="product-title">{{ product.name }}</h3>
-      <div class="rating-info">{{ ratingStars }}</div>
+      <div class="rating-info">
+        <i class="fa-solid fa-star text-warning me-1"></i> 4.9 (120+ alumnos)
+      </div>
     </div>
   </div>
 
@@ -17,14 +21,29 @@
   </div>
 
   <div class="card-footer">
-    <div class="stock-info">Vacantes: <strong>{{ product.stock }}</strong></div>
+    <div class="stock-info">
+      <i class="fa-solid fa-users text-muted me-1"></i> Vacantes: <strong>{{ product.stock }}</strong>
+    </div>
     <div class="actions">
-      <button class="btn btn-secondary btn-detail" (click)="onViewDetail()">📖 Temario</button>
-      <button *ngIf="auth.currentUser" class="btn btn-secondary btn-pdf" (click)="downloadSyllabusPdf()" title="Descargar Plan de Estudios en PDF">📄 PDF</button>
-      <button class="btn btn-primary btn-enroll" (click)="onBuy()">🎓 Inscribirse</button>
+      <button class="btn btn-secondary btn-detail" (click)="onViewDetail()">
+        <i class="fa-solid fa-book-open me-1"></i> Temario
+      </button>
+      
+      <button *ngIf="auth.currentUser" class="btn btn-secondary btn-pdf" (click)="downloadSyllabusPdf()" title="Descargar Plan de Estudios Oficial">
+        <i class="fa-solid fa-file-arrow-down me-1"></i> PDF
+      </button>
+      
+      <button class="btn btn-primary btn-enroll" (click)="onBuy()">
+        <i class="fa-solid fa-graduation-cap me-1"></i> Inscribirse
+      </button>
+      
       <ng-container *ngIf="isAdmin">
-        <button class="btn btn-secondary btn-icon" (click)="onEdit()" title="Editar">✏️</button>
-        <button class="btn btn-danger btn-icon" (click)="onDelete()" title="Eliminar">🗑️</button>
+        <button class="btn btn-secondary btn-icon" (click)="onEdit()" title="Editar Curso">
+          <i class="fa-solid fa-pen-to-square"></i>
+        </button>
+        <button class="btn btn-danger btn-icon" (click)="onDelete()" title="Eliminar Curso">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
       </ng-container>
     </div>
   </div>

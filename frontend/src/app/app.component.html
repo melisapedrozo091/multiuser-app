@@ -1,28 +1,33 @@
 <header class="navbar">
   <div class="nav-brand" routerLink="/landing">
-    <span class="logo">🎓</span>
+    <span class="logo"><i class="fa-solid fa-graduation-cap"></i></span>
     <span class="brand-text">Academia Tech</span>
   </div>
 
   <nav class="nav-links">
-    <a routerLink="/landing" routerLinkActive="active">🎓 Cursos</a>
-    <a routerLink="/faq" routerLinkActive="active">❓ FAQ</a>
-    <a routerLink="/chat" routerLinkActive="active">💬 Foro Comunidad</a>
-    <a routerLink="/metrics" routerLinkActive="active" *ngIf="auth.currentUser">📊 Métricas</a>
-    <a routerLink="/admin/users" routerLinkActive="active" *ngIf="auth.currentUser?.role === 'ADMIN'">🛡️ Admin Usuarios</a>
-    <a routerLink="/profile" routerLinkActive="active" *ngIf="auth.currentUser">👤 Mi Perfil</a>
+    <a routerLink="/landing" routerLinkActive="active"><i class="fa-solid fa-book-open me-1"></i> Cursos</a>
+    <a routerLink="/faq" routerLinkActive="active"><i class="fa-solid fa-circle-question me-1"></i> FAQ</a>
+    <a routerLink="/chat" routerLinkActive="active"><i class="fa-solid fa-comments me-1"></i> Foro Comunidad</a>
+    <a routerLink="/metrics" routerLinkActive="active" *ngIf="auth.currentUser"><i class="fa-solid fa-chart-line me-1"></i> Métricas</a>
+    <a routerLink="/admin/users" routerLinkActive="active" *ngIf="auth.currentUser?.role === 'ADMIN'"><i class="fa-solid fa-user-shield me-1"></i> Admin Usuarios</a>
+    <a routerLink="/profile" routerLinkActive="active" *ngIf="auth.currentUser"><i class="fa-solid fa-circle-user me-1"></i> Mi Perfil</a>
   </nav>
 
   <div class="nav-actions">
     <button class="btn btn-secondary theme-toggle" (click)="toggleTheme()">
-      {{ themeService.isDark() ? '☀️ Claro' : '🌙 Oscuro' }}
+      <i [class]="themeService.isDark() ? 'fa-solid fa-sun me-1' : 'fa-solid fa-moon me-1'"></i>
+      {{ themeService.isDark() ? 'Claro' : 'Oscuro' }}
     </button>
 
     <ng-container *ngIf="auth.currentUser">
-      <button class="btn btn-danger" (click)="logout()">Salir</button>
+      <button class="btn btn-danger" (click)="logout()">
+        <i class="fa-solid fa-right-from-bracket me-1"></i> Salir
+      </button>
     </ng-container>
     <ng-container *ngIf="!auth.currentUser">
-      <a routerLink="/login" class="btn btn-primary">Ingresar</a>
+      <a routerLink="/login" class="btn btn-primary">
+        <i class="fa-solid fa-right-to-bracket me-1"></i> Ingresar
+      </a>
     </ng-container>
   </div>
 </header>
@@ -38,11 +43,11 @@
     <div class="footer-col">
       <h4 class="col-title">Ayuda</h4>
       <ul class="footer-menu">
-        <li><a routerLink="/faq">Preguntas Frecuentes</a></li>
-        <li><a routerLink="/landing">Promociones & Becas</a></li>
-        <li><a routerLink="/landing">Guía de Temarios y Cursos</a></li>
-        <li><a routerLink="/faq">Políticas de Certificación</a></li>
-        <li><a href="mailto:soporte&#64;academiatech.com">Soporte Técnico 24/7</a></li>
+        <li><a routerLink="/faq"><i class="fa-solid fa-angle-right me-1"></i> Preguntas Frecuentes</a></li>
+        <li><a routerLink="/landing"><i class="fa-solid fa-angle-right me-1"></i> Promociones & Becas</a></li>
+        <li><a routerLink="/landing"><i class="fa-solid fa-angle-right me-1"></i> Guía de Temarios y Cursos</a></li>
+        <li><a routerLink="/faq"><i class="fa-solid fa-angle-right me-1"></i> Políticas de Certificación</a></li>
+        <li><a href="mailto:soporte&#64;academiatech.com"><i class="fa-solid fa-headset me-1"></i> Soporte Técnico 24/7</a></li>
       </ul>
     </div>
 
@@ -50,11 +55,11 @@
     <div class="footer-col">
       <h4 class="col-title">Inscripción & Pagos</h4>
       <ul class="footer-menu">
-        <li><a routerLink="/landing">Información de tu Inscripción</a></li>
-        <li><a routerLink="/faq">Formas de Pago (USD / ARS)</a></li>
-        <li><a routerLink="/landing">Garantía de Aprendizaje</a></li>
-        <li><a routerLink="/landing">Compra Segura SSL</a></li>
-        <li><a routerLink="/profile" *ngIf="auth.currentUser">Descargar Plan de Estudios</a></li>
+        <li><a routerLink="/landing"><i class="fa-solid fa-angle-right me-1"></i> Información de tu Inscripción</a></li>
+        <li><a routerLink="/faq"><i class="fa-solid fa-angle-right me-1"></i> Formas de Pago (USD / ARS)</a></li>
+        <li><a routerLink="/landing"><i class="fa-solid fa-angle-right me-1"></i> Garantía de Aprendizaje</a></li>
+        <li><a routerLink="/landing"><i class="fa-solid fa-shield-halved me-1"></i> Compra Segura SSL</a></li>
+        <li><a routerLink="/profile" *ngIf="auth.currentUser"><i class="fa-solid fa-file-pdf me-1"></i> Descargar Plan de Estudios</a></li>
       </ul>
     </div>
 
@@ -62,11 +67,11 @@
     <div class="footer-col">
       <h4 class="col-title">Institucional</h4>
       <ul class="footer-menu">
-        <li><a routerLink="/landing">Sobre Academia Tech</a></li>
-        <li><a routerLink="/landing">Alianzas con Empresas Tech</a></li>
-        <li><a href="mailto:ventas&#64;academiatech.com">Sumate como Instructor</a></li>
-        <li><a routerLink="/landing">Trabaja con Nosotros</a></li>
-        <li><a routerLink="/faq">Responsabilidad Social</a></li>
+        <li><a routerLink="/landing"><i class="fa-solid fa-angle-right me-1"></i> Sobre Academia Tech</a></li>
+        <li><a routerLink="/landing"><i class="fa-solid fa-angle-right me-1"></i> Alianzas con Empresas Tech</a></li>
+        <li><a href="mailto:ventas&#64;academiatech.com"><i class="fa-solid fa-chalkboard-user me-1"></i> Sumate como Instructor</a></li>
+        <li><a routerLink="/landing"><i class="fa-solid fa-angle-right me-1"></i> Trabaja con Nosotros</a></li>
+        <li><a routerLink="/faq"><i class="fa-solid fa-angle-right me-1"></i> Responsabilidad Social</a></li>
       </ul>
     </div>
 
@@ -74,16 +79,16 @@
     <div class="footer-col">
       <h4 class="col-title">Legales</h4>
       <ul class="footer-menu">
-        <li><a routerLink="/faq">Política de Privacidad</a></li>
-        <li><a routerLink="/faq">Términos y Condiciones</a></li>
-        <li><a routerLink="/faq">Libro de Quejas y Sugerencias</a></li>
-        <li><a routerLink="/faq">Defensa del Consumidor</a></li>
+        <li><a routerLink="/faq"><i class="fa-solid fa-angle-right me-1"></i> Política de Privacidad</a></li>
+        <li><a routerLink="/faq"><i class="fa-solid fa-angle-right me-1"></i> Términos y Condiciones</a></li>
+        <li><a routerLink="/faq"><i class="fa-solid fa-angle-right me-1"></i> Libro de Quejas y Sugerencias</a></li>
+        <li><a routerLink="/faq"><i class="fa-solid fa-scale-balanced me-1"></i> Defensa del Consumidor</a></li>
       </ul>
 
       <!-- BOTÓN DE ARREPENTIMIENTO SEGÚN LEY 24.240 / 26.361 -->
       <div class="arrepentimiento-box">
         <a routerLink="/arrepentimiento" class="btn-arrepentimiento">
-          <span class="arrepentimiento-icon">🔄</span> Botón de arrepentimiento
+          <span class="arrepentimiento-icon"><i class="fa-solid fa-rotate-left"></i></span> Botón de arrepentimiento
         </a>
       </div>
     </div>
@@ -92,11 +97,11 @@
     <div class="footer-col">
       <h4 class="col-title">Contacto</h4>
       <ul class="footer-contact">
-        <li><a routerLink="/faq">✉️ Formulario de Contacto</a></li>
-        <li><a href="mailto:ventas&#64;academiatech.com">✉️ ventas&#64;academiatech.com</a></li>
-        <li><a href="mailto:soporte&#64;academiatech.com">🛠️ soporte&#64;academiatech.com</a></li>
-        <li><a href="tel:08103338324">📞 0810-333-TECH (8324)</a></li>
-        <li><a href="https://wa.me/5491155551234" target="_blank">💬 WhatsApp Directo</a></li>
+        <li><a routerLink="/faq"><i class="fa-solid fa-envelope me-2"></i> Formulario de Contacto</a></li>
+        <li><a href="mailto:ventas&#64;academiatech.com"><i class="fa-solid fa-paper-plane me-2"></i> ventas&#64;academiatech.com</a></li>
+        <li><a href="mailto:soporte&#64;academiatech.com"><i class="fa-solid fa-wrench me-2"></i> soporte&#64;academiatech.com</a></li>
+        <li><a href="tel:08103338324"><i class="fa-solid fa-phone me-2"></i> 0810-333-TECH (8324)</a></li>
+        <li><a href="https://wa.me/5491155551234" target="_blank"><i class="fa-brands fa-whatsapp me-2 text-success"></i> WhatsApp Directo</a></li>
       </ul>
     </div>
   </div>
@@ -107,10 +112,10 @@
       <span>Desarrollado para Academia Tech © 2026. Todos los derechos reservados.</span>
     </div>
     <div class="trust-badges">
-      <span class="trust-item">💳 MercadoPago</span>
-      <span class="trust-item">🔒 SSL 256-Bit</span>
-      <span class="trust-item">🇦🇷 CACE</span>
-      <span class="trust-item">🛡️ Defensa del Consumidor</span>
+      <span class="trust-item"><i class="fa-solid fa-credit-card me-1"></i> MercadoPago</span>
+      <span class="trust-item"><i class="fa-solid fa-lock me-1"></i> SSL 256-Bit</span>
+      <span class="trust-item"><i class="fa-solid fa-award me-1"></i> CACE</span>
+      <span class="trust-item"><i class="fa-solid fa-shield-cat me-1"></i> Defensa del Consumidor</span>
     </div>
   </div>
 </footer>
