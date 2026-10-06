@@ -80,6 +80,7 @@
       [product]="prod"
       [isAdmin]="isAdmin"
       (buy)="onBuyProduct($event)"
+      (viewDetail)="openCourseDetail($event)"
       (edit)="onEditProduct($event)"
       (delete)="onDeleteProduct($event)"
     >
@@ -89,5 +90,126 @@
   <!-- EMPTY STATE -->
   <div class="empty-state card" *ngIf="!loading && filteredProducts.length === 0">
     <p>No se encontraron cursos que coincidan con la búsqueda seleccionada.</p>
+  </div>
+
+  <!-- FAQ SECTION -->
+  <div class="faq-section card">
+    <h2 class="faq-title">❓ Preguntas Frecuentes (FAQ)</h2>
+    <div class="faq-list">
+      <div *ngFor="let faq of faqs; let i = index" class="faq-item" [class.open]="faq.open" (click)="toggleFaq(i)">
+        <div class="faq-question">
+          <span>{{ faq.question }}</span>
+          <span class="faq-toggle-icon">{{ faq.open ? '➖' : '➕' }}</span>
+        </div>
+        <div class="faq-answer" *ngIf="faq.open">
+          <p>{{ faq.answer }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DETALLE Y TEMARIO DEL CURSO -->
+  <div class="modal-overlay" *ngIf="selectedCourseDetail" (click)="closeCourseDetail()">
+    <div class="modal-card modal-large" (click)="$event.stopPropagation()">
+      <button class="close-btn" (click)="closeCourseDetail()">✖</button>
+      
+      <div class="modal-header">
+        <span class="modal-badge">🎓 Guía de Temas del Curso</span>
+        <h2>{{ selectedCourseDetail.name }}</h2>
+        <div class="author-tag">
+          👤 <strong>Creado por:</strong> {{ getSyllabus(selectedCourseDetail).author }}
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <p class="course-long-desc">{{ selectedCourseDetail.description }}</p>
+
+        <h4 class="syllabus-heading">📚 Módulos & Lecciones del Curso:</h4>
+        <div class="syllabus-modules">
+          <div *ngFor="let mod of getSyllabus(selectedCourseDetail).modules" class="module-box">
+            <h5 class="module-title">{{ mod.title }}</h5>
+            <ul class="module-lessons">
+              <li *ngFor="let lesson of mod.lessons">✔️ {{ lesson }}</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="support-info-box">
+          <h4>💬 Soporte & Dudas del Alumno:</h4>
+          <p>📧 Email: <strong>{{ getSyllabus(selectedCourseDetail).supportEmail }}</strong></p>
+          <p>📱 WhatsApp Soporte: <strong>{{ getSyllabus(selectedCourseDetail).supportPhone }}</strong></p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div class="modal-price">
+          Valor: <strong>{{ currencyService.format(selectedCourseDetail.price) }}</strong>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" (click)="closeCourseDetail()">Cerrar</button>
+          <button class="btn btn-primary" (click)="closeCourseDetail(); onBuyProduct(selectedCourseDetail)">
+            🎓 Inscribirme al Curso
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: INICIAR SESIÓN REQUERIDO (GUARD) -->
+  <div class="modal-overlay" *ngIf="showAuthModal" (click)="closeAuthModal()">
+    <div class="modal-card modal-sm" (click)="$event.stopPropagation()">
+      <button class="close-btn" (click)="closeAuthModal()">✖</button>
+      <div class="modal-header text-center">
+        <span class="auth-icon">🔒</span>
+        <h2>Inicio de Sesión Requerido</h2>
+      </div>
+      <div class="modal-body text-center">
+        <p>
+          Para inscribirte en el curso <strong>"{{ enrollingCourse?.name }}"</strong> y realizar el checkout, primero debes ingresar con tu cuenta.
+        </p>
+      </div>
+      <div class="modal-footer justify-center">
+        <button class="btn btn-secondary" (click)="closeAuthModal()">Volver al Catálogo</button>
+        <button class="btn btn-primary" (click)="goToLogin()">🔑 Iniciar Sesión / Registrarme</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CHECKOUT DE COMPRA -->
+  <div class="modal-overlay" *ngIf="showCheckoutModal" (click)="closeCheckoutModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <button class="close-btn" (click)="closeCheckoutModal()">✖</button>
+      <div class="modal-header">
+        <h2>🛒 Confirmación de Inscripción & Checkout</h2>
+      </div>
+      <div class="modal-body" *ngIf="!purchaseCompleted">
+        <div class="checkout-summary card">
+          <h3>{{ enrollingCourse?.name }}</h3>
+          <p class="summary-price">
+            Monto a Abonar: <strong>{{ currencyService.format(enrollingCourse?.price || 0) }}</strong>
+          </p>
+          <p class="student-info">
+            Alumno: <strong>{{ auth.currentUser?.displayName || auth.currentUser?.email }}</strong> ({{ auth.currentUser?.email }})
+          </p>
+        </div>
+        <div class="payment-methods">
+          <h4>Selecciona Medio de Pago:</h4>
+          <label class="payment-option">
+            <input type="radio" name="pay" checked /> 💳 Tarjeta de Crédito / Débito (MercadoPago / Stripe)
+          </label>
+          <label class="payment-option">
+            <input type="radio" name="pay" /> 🏦 Transferencia Bancaria
+          </label>
+        </div>
+      </div>
+      <div class="modal-body text-center" *ngIf="purchaseCompleted">
+        <div class="spinner"></div>
+        <p>Procesando pago e inscripción en el campus...</p>
+      </div>
+      <div class="modal-footer" *ngIf="!purchaseCompleted">
+        <button class="btn btn-secondary" (click)="closeCheckoutModal()">Cancelar</button>
+        <button class="btn btn-primary" (click)="confirmCheckout()">✅ Pagar e Inscribirme</button>
+      </div>
+    </div>
   </div>
 </div>

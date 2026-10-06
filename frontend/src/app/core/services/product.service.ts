@@ -9,16 +9,17 @@ export class ProductService {
 
   private getHeaders(): HeadersInit {
     const token = this.auth.getToken();
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
     };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
   }
 
   async getAll(): Promise<Product[]> {
-    const res = await fetch(`${environment.apiBase}/products`, {
-      headers: this.getHeaders()
-    });
+    const res = await fetch(`${environment.apiBase}/products`);
     if (!res.ok) throw new Error('Error al cargar productos');
     return res.json();
   }

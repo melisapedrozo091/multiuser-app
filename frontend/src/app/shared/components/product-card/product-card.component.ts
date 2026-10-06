@@ -19,8 +19,13 @@ export class ProductCardComponent {
   @Output() edit = new EventEmitter<Product>();
   @Output() delete = new EventEmitter<number>();
   @Output() buy = new EventEmitter<Product>();
+  @Output() viewDetail = new EventEmitter<Product>();
 
   constructor(public currencyService: CurrencyService) {}
+
+  onViewDetail(): void {
+    this.viewDetail.emit(this.product);
+  }
 
   get formattedPrice(): string {
     return this.currencyService.format(this.product.price);

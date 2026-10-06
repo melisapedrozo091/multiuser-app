@@ -19,6 +19,7 @@
   <div class="card-footer">
     <div class="stock-info">Vacantes: <strong>{{ product.stock }}</strong></div>
     <div class="actions">
+      <button class="btn btn-secondary btn-detail" (click)="onViewDetail()">📖 Temario</button>
       <button class="btn btn-primary btn-enroll" (click)="onBuy()">🎓 Inscribirse</button>
       <ng-container *ngIf="isAdmin">
         <button class="btn btn-secondary btn-icon" (click)="onEdit()" title="Editar">✏️</button>
