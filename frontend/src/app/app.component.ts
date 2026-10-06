@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router, RouterLink, RouterOutlet } from '@angular/router';
 import { AuthService } from './core/services/auth.service';
 import { ThemeService } from './core/services/theme.service';
 
