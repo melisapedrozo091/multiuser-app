@@ -92,17 +92,21 @@
     <p>No se encontraron cursos que coincidan con la búsqueda seleccionada.</p>
   </div>
 
-  <!-- FAQ SECTION -->
-  <div class="faq-section card">
-    <h2 class="faq-title">❓ Preguntas Frecuentes (FAQ)</h2>
-    <div class="faq-list">
-      <div *ngFor="let faq of faqs; let i = index" class="faq-item" [class.open]="faq.open" (click)="toggleFaq(i)">
-        <div class="faq-question">
-          <span>{{ faq.question }}</span>
-          <span class="faq-toggle-icon">{{ faq.open ? '➖' : '➕' }}</span>
-        </div>
-        <div class="faq-answer" *ngIf="faq.open">
-          <p>{{ faq.answer }}</p>
+  <!-- BANNER CENTRO DE AYUDA & FAQ (CON LOGO / EMBLEMA) -->
+  <div class="faq-banner-card card">
+    <div class="faq-banner-content">
+      <div class="faq-logo-wrapper">
+        <img src="assets/images/tech_academy_logo.png" alt="Academia Tech Emblem" class="faq-logo-img" />
+      </div>
+      <div class="faq-text-wrapper">
+        <span class="faq-badge">❓ Centro de Ayuda & Consultas</span>
+        <h2>¿Tienes dudas sobre los Cursos o Certificaciones?</h2>
+        <p>
+          Explora todas las respuestas sobre metodologías, medios de pago (USD/ARS), certificados oficiales y soporte técnico en nuestra sección exclusiva.
+        </p>
+        <div class="faq-banner-actions">
+          <a routerLink="/faq" class="btn btn-primary btn-lg">❓ Ver Preguntas Frecuentes (FAQ)</a>
+          <a routerLink="/chat" class="btn btn-secondary btn-lg">💬 Ir al Foro de la Comunidad</a>
         </div>
       </div>
     </div>
