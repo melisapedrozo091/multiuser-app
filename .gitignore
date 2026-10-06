@@ -7,6 +7,9 @@ dist/
 .env
 firebase-service-key.json
 *.pem
+*.db
+*.db-journal
+dev.db
 
 # Logs
 *.log

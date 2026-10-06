@@ -5,7 +5,7 @@ import { Directive, ElementRef, Input, OnChanges, Renderer2, SimpleChanges } fro
   standalone: true
 })
 export class HighlightDirective implements OnChanges {
-  @Input() appHighlightColor = 'rgba(239, 68, 68, 0.15)'; // Default highlight tint
+  @Input('appHighlight') appHighlightColor = 'rgba(239, 68, 68, 0.15)'; // Default highlight tint
   @Input() highlightCondition = false;
 
   constructor(private el: ElementRef, private renderer: Renderer2) {}

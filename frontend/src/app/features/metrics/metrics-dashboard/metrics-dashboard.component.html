@@ -12,7 +12,7 @@
         <div class="bar-group" *ngFor="let s of salesData">
           <div class="bar-wrapper">
             <div class="bar" [style.height.%]="(s.total / maxSales) * 100">
-              <span class="bar-value">\${{ s.total }}</span>
+              <span class="bar-value">${{ s.total }}</span>
             </div>
           </div>
           <span class="bar-label">{{ s.month }}</span>

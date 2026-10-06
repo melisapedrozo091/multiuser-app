@@ -58,7 +58,7 @@ export class ProductListComponent implements OnInit {
   }
 
   onBuyProduct(product: Product): void {
-    alert(`¡Gracias por adquirir "${product.name}" por \$${product.price}!`);
+    alert(`¡Gracias por adquirir "${product.name}" por $${product.price}!`);
   }
 
   onEditProduct(product: Product): void {

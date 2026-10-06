@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { firebaseAdmin } from '../services/firebase.service';
+import jwt from 'jsonwebtoken';
+import { firebaseAdmin, hasFirebaseKey } from '../services/firebase.service';
+
+export const JWT_SECRET = process.env.JWT_SECRET || 'multiuser-dev-jwt-secret-2026';
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -19,15 +22,25 @@ export async function firebaseAuthMiddleware(req: AuthenticatedRequest, res: Res
   const idToken = authHeader.split('Bearer ')[1];
 
   try {
-    const decoded = await firebaseAdmin.auth().verifyIdToken(idToken);
-    req.user = {
-      uid: decoded.uid,
-      email: decoded.email,
-      role: (decoded as any).role || 'CLIENTE'
-    };
+    if (hasFirebaseKey) {
+      const decoded = await firebaseAdmin.auth().verifyIdToken(idToken);
+      req.user = {
+        uid: decoded.uid,
+        email: decoded.email,
+        role: (decoded as any).role || 'CLIENTE'
+      };
+    } else {
+      const decoded = jwt.verify(idToken, JWT_SECRET) as any;
+      req.user = {
+        uid: decoded.uid || decoded.id,
+        email: decoded.email,
+        role: decoded.role || 'CLIENTE'
+      };
+    }
     next();
-  } catch (error) {
-    console.error('Firebase token verification error:', error);
-    return res.status(401).json({ error: 'Invalid or expired Firebase token' });
+  } catch (error: any) {
+    console.error('Token verification error:', error.message);
+    return res.status(401).json({ error: 'Token inválido o expirado' });
   }
 }
+
