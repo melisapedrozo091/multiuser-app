@@ -1,4 +1,5 @@
 <div class="page-container" style="max-width: 750px; margin: 40px auto; padding: 0 20px;">
+  <!-- If Logged In -->
   <div class="card profile-card" *ngIf="auth.currentUser as user">
     <div class="profile-header" style="text-align: center; margin-bottom: 25px;">
       <div class="avatar" style="font-size: 3rem; margin-bottom: 10px;">👤</div>
@@ -55,5 +56,17 @@
         </button>
       </form>
     </div>
+  </div>
+
+  <!-- If Unauthenticated -->
+  <div class="card profile-card auth-prompt" *ngIf="!auth.currentUser" style="text-align: center; padding: 40px 30px; background: var(--card-bg, #1e293b); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+    <div style="font-size: 3.5rem; margin-bottom: 15px;">🔒</div>
+    <h2 style="font-size: 1.8rem; font-weight: 700; margin-bottom: 10px; color: var(--text-color, #f8fafc);">Inicia Sesión para ver tu Perfil</h2>
+    <p style="color: #94a3b8; max-width: 480px; margin: 0 auto 25px auto; font-size: 1rem; line-height: 1.5;">
+      Debes ingresar con tu cuenta registrada para gestionar tus datos personales, rol de acceso y configuración de seguridad.
+    </p>
+    <a [routerLink]="['/login']" class="btn btn-primary" style="display: inline-block; padding: 12px 28px; border-radius: 10px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #ffffff; text-decoration: none; font-weight: 600; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);">
+      🔑 Iniciar Sesión / Registrarse
+    </a>
   </div>
 </div>
