@@ -1,27 +1,175 @@
-<div class="page-container" style="max-width: 750px; margin: 40px auto; padding: 0 20px;">
+<div class="page-container" style="max-width: 900px; margin: 30px auto; padding: 0 20px;">
   <!-- If Logged In -->
-  <div class="card profile-card" *ngIf="auth.currentUser as user">
-    <div class="profile-header" style="text-align: center; margin-bottom: 25px;">
-      <div class="avatar" style="font-size: 3rem; margin-bottom: 10px;">👤</div>
-      <h2 style="font-size: 1.8rem; font-weight: 700; margin: 0; color: var(--text-color, #f8fafc);">{{ user.displayName || 'Usuario Registrado' }}</h2>
-      <p class="email" style="color: #94a3b8; font-size: 0.95rem; margin-top: 4px;">{{ user.email }}</p>
+  <div class="card profile-card" *ngIf="auth.currentUser as user" style="background: var(--card-bg, #1e293b); border-radius: 16px; padding: 30px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+    <!-- User Banner Header -->
+    <div class="profile-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 25px; margin-bottom: 25px;">
+      <div style="display: flex; align-items: center; gap: 18px;">
+        <div class="avatar-circle" style="width: 65px; height: 65px; border-radius: 50%; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #fff; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);">
+          <i class="fa-solid fa-user"></i>
+        </div>
+        <div>
+          <h2 style="font-size: 1.6rem; font-weight: 700; margin: 0; color: var(--text-color, #f8fafc);">{{ user.displayName || 'Usuario Registrado' }}</h2>
+          <p style="color: #94a3b8; font-size: 0.9rem; margin: 4px 0 0 0;"><i class="fa-solid fa-envelope me-1"></i> {{ user.email }}</p>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <span class="badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); padding: 6px 14px; border-radius: 20px; font-weight: 600; font-size: 0.85rem;">
+          <i class="fa-solid fa-shield-halved me-1"></i> Rol: {{ user.role }}
+        </span>
+      </div>
     </div>
 
-    <div class="info-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; background: var(--bg-hover, rgba(255,255,255,0.04)); padding: 20px; border-radius: 12px; margin-bottom: 30px;">
-      <div class="info-item">
-        <span class="label" style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">ID de Cuenta:</span>
-        <code style="font-size: 0.85rem; color: #6366f1;">{{ user.id }}</code>
+    <!-- MAIN PROFILE DASHBOARD TABS -->
+    <div class="profile-tabs" style="display: flex; gap: 10px; border-bottom: 2px solid rgba(255,255,255,0.08); margin-bottom: 25px; flex-wrap: wrap;">
+      <button [class.active-tab]="activeTab === 'cursos'" (click)="setTab('cursos')" class="tab-btn">
+        <i class="fa-solid fa-graduation-cap me-2"></i> Mis Cursos
+      </button>
+      <button [class.active-tab]="activeTab === 'certificados'" (click)="setTab('certificados')" class="tab-btn">
+        <i class="fa-solid fa-award me-2"></i> Mis Certificados
+      </button>
+      <button [class.active-tab]="activeTab === 'pagos'" (click)="setTab('pagos')" class="tab-btn">
+        <i class="fa-solid fa-credit-card me-2"></i> Medios de Pago
+      </button>
+      <button [class.active-tab]="activeTab === 'seguridad'" (click)="setTab('seguridad')" class="tab-btn">
+        <i class="fa-solid fa-lock me-2"></i> Seguridad
+      </button>
+    </div>
+
+    <!-- TAB 1: MIS CURSOS -->
+    <div class="tab-content" *ngIf="activeTab === 'cursos'">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+        <h3 style="font-size: 1.25rem; font-weight: 600; margin: 0; color: var(--text-color, #fff);">
+          📚 Panel de Mis Cursos Acreditados
+        </h3>
+        
+        <!-- Status Filter Pills -->
+        <div class="filter-pills" style="display: flex; gap: 8px;">
+          <button [class.active-pill]="courseFilter === 'TODOS'" (click)="setCourseFilter('TODOS')" class="pill-btn">Todos</button>
+          <button [class.active-pill]="courseFilter === 'EN_CURSO'" (click)="setCourseFilter('EN_CURSO')" class="pill-btn">En Curso</button>
+          <button [class.active-pill]="courseFilter === 'FINALIZADOS'" (click)="setCourseFilter('FINALIZADOS')" class="pill-btn">Finalizados</button>
+          <button [class.active-pill]="courseFilter === 'ANULADOS'" (click)="setCourseFilter('ANULADOS')" class="pill-btn">Anulados</button>
+        </div>
       </div>
-      <div class="info-item">
-        <span class="label" style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">Rol de Usuario:</span>
-        <span class="badge" style="background: rgba(99, 102, 241, 0.2); color: #818cf8; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; display: inline-block;">{{ user.role }}</span>
+
+      <div class="courses-list" style="display: flex; flex-direction: column; gap: 15px;">
+        <div *ngFor="let course of filteredCourses" class="course-item-card" style="background: var(--bg-hover, rgba(255,255,255,0.03)); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 15px;">
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <span style="font-size: 1.8rem;">{{ course.icon }}</span>
+              <div>
+                <h4 style="font-size: 1.05rem; font-weight: 600; margin: 0; color: var(--text-color, #fff);">{{ course.name }}</h4>
+                <span style="font-size: 0.8rem; color: #94a3b8;">Categoría: {{ course.category }}</span>
+              </div>
+            </div>
+
+            <!-- Status Badge -->
+            <div>
+              <span *ngIf="course.status === 'EN_CURSO'" class="status-badge status-progress"><i class="fa-solid fa-spinner fa-spin me-1"></i> En Curso</span>
+              <span *ngIf="course.status === 'FINALIZADO'" class="status-badge status-completed"><i class="fa-solid fa-circle-check me-1"></i> Finalizado</span>
+              <span *ngIf="course.status === 'ANULADO'" class="status-badge status-canceled"><i class="fa-solid fa-ban me-1"></i> Anulado</span>
+            </div>
+          </div>
+
+          <!-- Progress bar -->
+          <div *ngIf="course.status !== 'ANULADO'" style="margin-top: 5px;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">
+              <span>Progreso de Clases</span>
+              <span><strong>{{ course.progress }}%</strong></span>
+            </div>
+            <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden;">
+              <div [style.width.%]="course.progress" [style.background]="course.status === 'FINALIZADO' ? '#10b981' : '#6366f1'" style="height: 100%; transition: width 0.4s ease;"></div>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; font-size: 0.8rem; color: #94a3b8;">
+            <span><i class="fa-solid fa-clock me-1"></i> {{ course.lastAccess }}</span>
+            <button *ngIf="course.status === 'EN_CURSO'" [routerLink]="['/products']" class="btn btn-sm btn-primary" style="padding: 6px 16px; border-radius: 6px; font-size: 0.8rem; background: #6366f1; color: #fff; border: none; cursor: pointer;">
+              <i class="fa-solid fa-play me-1"></i> Continuar Aprendizaje
+            </button>
+            <button *ngIf="course.status === 'FINALIZADO'" (click)="downloadCertificatePdf(course)" class="btn btn-sm btn-success" style="padding: 6px 16px; border-radius: 6px; font-size: 0.8rem; background: #10b981; color: #fff; border: none; cursor: pointer;">
+              <i class="fa-solid fa-file-pdf me-1"></i> Descargar Certificado
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="filteredCourses.length === 0" style="text-align: center; padding: 30px; color: #94a3b8;">
+          No se encontraron cursos registrados bajo esta categoría.
+        </div>
       </div>
     </div>
 
-    <!-- Security & Password Management Section -->
-    <div class="security-section" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 25px;">
-      <h3 style="font-size: 1.3rem; font-weight: 600; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
-        🛡️ Seguridad y Cambio de Contraseña
+    <!-- TAB 2: MIS CERTIFICADOS -->
+    <div class="tab-content" *ngIf="activeTab === 'certificados'">
+      <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 20px; color: var(--text-color, #fff);">
+        🎓 Certificados Oficiales Emitidos
+      </h3>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+        <div *ngFor="let cert of completedCertificates" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 14px; padding: 22px; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="font-size: 2rem; margin-bottom: 10px;">🏆</div>
+            <h4 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 8px 0; color: var(--text-color, #fff);">{{ cert.name }}</h4>
+            <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 12px;">Emisión: 01 de Octubre de 2026</p>
+            <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 8px 12px; border-radius: 8px; font-size: 0.75rem; color: #34d399; display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
+              <i class="fa-solid fa-qrcode" style="font-size: 1.2rem;"></i>
+              <span>Verificación QR Acreditada: <strong>{{ cert.certificateId }}</strong></span>
+            </div>
+          </div>
+
+          <button (click)="downloadCertificatePdf(cert)" class="btn btn-success" style="width: 100%; padding: 10px; border-radius: 8px; background: #10b981; color: #fff; font-weight: 600; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <i class="fa-solid fa-download"></i> Descargar Certificado (PDF)
+          </button>
+        </div>
+
+        <div *ngIf="completedCertificates.length === 0" style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #94a3b8;">
+          Aún no has finalizado ningún curso al 100%. ¡Completa tus clases para desbloquear tus certificados oficiales!
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: MEDIOS DE PAGO & FACTURAS -->
+    <div class="tab-content" *ngIf="activeTab === 'pagos'">
+      <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 20px; color: var(--text-color, #fff);">
+        💳 Tarjetas y Formas de Pago Guardadas
+      </h3>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-bottom: 30px;">
+        <div *ngFor="let pm of paymentMethods" style="background: var(--bg-hover, rgba(255,255,255,0.04)); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 18px; position: relative;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-weight: 700; font-size: 1.1rem; color: #818cf8;">
+              <i class="fa-solid fa-credit-card me-1"></i> {{ pm.type }}
+            </span>
+            <span *ngIf="pm.isDefault" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 600;">Predeterminada</span>
+          </div>
+          <p style="font-size: 1.1rem; font-weight: 600; letter-spacing: 2px; margin: 0 0 6px 0; color: #fff;">•••• •••• •••• {{ pm.last4 }}</p>
+          <p style="font-size: 0.8rem; color: #94a3b8; margin: 0;">Titular: {{ pm.holder }}</p>
+        </div>
+      </div>
+
+      <!-- Invoices Section -->
+      <h4 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; color: var(--text-color, #fff);">
+        📄 Historial de Comprobantes y Facturas
+      </h4>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div *ngFor="let inv of invoices" style="background: var(--bg-hover, rgba(255,255,255,0.03)); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <span style="font-weight: 600; font-size: 0.95rem; color: #fff; display: block;">{{ inv.concept }}</span>
+            <span style="font-size: 0.8rem; color: #94a3b8;">Factura N° {{ inv.id }} • {{ inv.date }}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <span style="font-weight: 700; color: #34d399;">{{ inv.amount }}</span>
+            <button (click)="downloadInvoicePdf(inv)" class="btn btn-sm btn-secondary" style="padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; background: rgba(255,255,255,0.1); color: #fff; border: none; cursor: pointer;">
+              <i class="fa-solid fa-file-arrow-down me-1"></i> Factura
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: SEGURIDAD -->
+    <div class="tab-content" *ngIf="activeTab === 'seguridad'">
+      <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 15px; color: var(--text-color, #fff); display: flex; align-items: center; gap: 8px;">
+        🛡️ Configuración de Seguridad y Contraseña
       </h3>
       <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 20px;">
         Para mantener tu cuenta protegida, actualiza periódicamente tu contraseña de acceso.
@@ -63,7 +211,7 @@
     <div style="font-size: 3.5rem; margin-bottom: 15px;">🔒</div>
     <h2 style="font-size: 1.8rem; font-weight: 700; margin-bottom: 10px; color: var(--text-color, #f8fafc);">Inicia Sesión para ver tu Perfil</h2>
     <p style="color: #94a3b8; max-width: 480px; margin: 0 auto 25px auto; font-size: 1rem; line-height: 1.5;">
-      Debes ingresar con tu cuenta registrada para gestionar tus datos personales, rol de acceso y configuración de seguridad.
+      Debes ingresar con tu cuenta registrada para gestionar tus cursos, certificados, comprobantes y configuración de seguridad.
     </p>
     <a [routerLink]="['/login']" class="btn btn-primary" style="display: inline-block; padding: 12px 28px; border-radius: 10px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #ffffff; text-decoration: none; font-weight: 600; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);">
       🔑 Iniciar Sesión / Registrarse

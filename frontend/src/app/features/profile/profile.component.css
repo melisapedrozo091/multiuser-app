@@ -1,64 +1,76 @@
 .page-container {
-  padding: 3rem 1.5rem;
-  display: flex;
-  justify-content: center;
+  padding: 2rem 1rem;
 }
 
-.profile-card {
-  width: 100%;
-  max-width: 480px;
-  text-align: center;
-}
-
-.avatar {
-  font-size: 3.5rem;
-  margin-bottom: 0.5rem;
-}
-
-h2 {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.email {
-  color: var(--text-muted);
+.tab-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 10px 18px;
+  font-weight: 600;
   font-size: 0.95rem;
-  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.info-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  text-align: left;
-  border-top: 1px solid var(--border-color);
-  padding-top: 1rem;
+.tab-btn:hover {
+  color: var(--text-color, #fff);
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.info-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.9rem;
-}
-
-.label {
-  color: var(--text-muted);
-}
-
-.badge {
+.tab-btn.active-tab {
+  color: #6366f1;
   background: rgba(99, 102, 241, 0.15);
-  color: var(--primary);
-  padding: 0.25rem 0.6rem;
-  border-radius: 12px;
+  border-bottom: 2px solid #6366f1;
+}
+
+.pill-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  padding: 4px 12px;
   font-size: 0.8rem;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pill-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pill-btn.active-pill {
+  background: #6366f1;
+  color: #ffffff;
+  border-color: #6366f1;
   font-weight: 600;
 }
 
-.profile-actions {
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  justify-content: center;
+.status-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.status-progress {
+  background: rgba(99, 102, 241, 0.2);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+}
+
+.status-completed {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.status-canceled {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
 }
