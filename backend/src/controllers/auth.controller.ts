@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import { firebaseAdmin, hasFirebaseKey } from '../services/firebase.service';
 import { JWT_SECRET } from '../middlewares/auth.middleware';
 import { prisma } from '../prisma/client';
-import { sendWelcomeEmail } from '../services/email.service';
+import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/email.service';
 
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -113,6 +113,8 @@ export const resetPassword = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'No existe una cuenta registrada con este correo electrónico' });
     }
 
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+
     if (hasFirebaseKey) {
       const userRecord = await firebaseAdmin.auth().getUserByEmail(email);
       if (newPassword) {
@@ -120,8 +122,13 @@ export const resetPassword = async (req: Request, res: Response) => {
       }
     }
 
+    // Send password reset email
+    sendPasswordResetEmail(email, dbUser.displayName || email.split('@')[0], resetCode).catch(err => {
+      console.error('Error enviando email de recuperación:', err);
+    });
+
     return res.json({
-      message: `Se ha enviado la instrucción de restauración al correo ${email}. Si deseas ingresar directamente en demostración, tu clave ha sido actualizada.`
+      message: `Se ha generado la solicitud de recuperación. Código de verificación: ${resetCode}. Se envió una copia a ${email}.`
     });
   } catch (error: any) {
     return res.status(400).json({ error: 'Error al procesar la restauración de contraseña', details: error.message });
