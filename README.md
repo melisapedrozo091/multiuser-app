@@ -1,53 +1,49 @@
 # 🚀 Plataforma Multi-Usuario Standalone (Angular + Node/Express + Prisma)
 
-Aplicación web completa con arquitectura limpia, **Angular (Standalone Components)** en el Frontend y **Node.js (Express) + Prisma ORM + Firebase Auth** en el Backend.
+Aplicación web full-stack que desarrollé con una arquitectura robusta, utilizando **Angular** para el frontend y una API en **Node.js (Express) + Prisma ** conectada a base de datos relacional, con autenticación centralizada mediante Firebase.
 
----
+## 🛠️ Stack Tecnológico
 
-## 🛠️ Tecnologías Utilizadas
+* **Frontend:** Angular , TypeScript, RxJS, Chart.js, CSS Custom Properties (Soporte completo para Modo Claro / Modo Oscuro).
+* **Backend:** Node.js, Express, TypeScript, Prisma ORM, PostgreSQL / MySQL.
+* **Autenticación y Tiempo Real:** Firebase Auth & Firestore / REST API.
+* **Control de Versiones:** Git con estrategia de ramas (`main`, `develop`, `feature/*`).
 
-- **Frontend:** Angular Standalone, TypeScript, RxJS, Chart.js, CSS Custom Properties (Temas Claro/Oscuro).
-- **Backend:** Node.js, Express, TypeScript, Prisma ORM, PostgreSQL/MySQL.
-- **Autenticación & Realtime:** Firebase Auth & Firestore / REST.
-- **Control de Versiones:** Git (`main`, `develop`, `feature/*`).
+## ⚡️ Guía de Puesta en Marcha
 
----
-
-## ⚡️ Guía de Inicio Rápido
-
-### 1️⃣ Inicializar Backend
+### 1️⃣ Configuración del Backend
 
 ```bash
 cd backend
 npm install
 cp .env.example .env
-# Edita .env con la URL de tu base de datos relacional
+# Configura las credenciales de tu base de datos y variables de entorno en el archivo .env
 npx prisma generate
 npx prisma migrate dev --name init
 npm run dev
+
 ```
 
-### 2️⃣ Inicializar Frontend
+### 2️⃣ Configuración del Frontend
 
 ```bash
 cd frontend
 npm install
 npm start
+
 ```
 
-Abre tu navegador en `http://localhost:4200`.
+La aplicación quedará corriendo en `http://localhost:4200`.
 
 ---
 
-## 🔗 Vincular con GitHub
+## 🔗 Repositorio en GitHub
+
+El proyecto está versionado y estructurado bajo buenas prácticas de Git:
 
 ```bash
-# En la raíz del proyecto:
-git init
-git checkout -b main
-git add .
-git commit -m "feat: inicializar proyecto completo multiusuario"
-git branch -M main
 git remote add origin https://github.com/melisapedrozo091/multiuser-app.git
+git branch -M main
 git push -u origin main
+
 ```
