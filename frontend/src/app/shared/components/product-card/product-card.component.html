@@ -37,15 +37,16 @@
       <button class="btn btn-primary btn-enroll" (click)="onBuy()">
         <i class="fa-solid fa-graduation-cap me-1"></i> Inscribirse
       </button>
-      
-      <ng-container *ngIf="isAdmin">
-        <button class="btn btn-secondary btn-icon" (click)="onEdit()" title="Editar Curso">
-          <i class="fa-solid fa-pen-to-square"></i>
-        </button>
-        <button class="btn btn-danger btn-icon" (click)="onDelete()" title="Eliminar Curso">
-          <i class="fa-solid fa-trash-can"></i>
-        </button>
-      </ng-container>
+    </div>
+
+    <!-- Barra de acciones de administración separada para no comprimir los botones -->
+    <div class="admin-actions-bar" *ngIf="isAdmin">
+      <button class="btn btn-secondary btn-admin-edit" (click)="onEdit()" title="Editar información del curso">
+        <i class="fa-solid fa-pen-to-square me-1"></i> Editar
+      </button>
+      <button class="btn btn-danger btn-admin-delete" (click)="onDelete()" title="Eliminar curso del catálogo">
+        <i class="fa-solid fa-trash-can me-1"></i> Eliminar
+      </button>
     </div>
   </div>
 </div>

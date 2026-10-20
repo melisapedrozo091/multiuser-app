@@ -116,15 +116,25 @@ export class ProfileComponent implements OnInit {
   }
 
   loadPaymentMethods(): void {
-    const userEmail = this.auth.currentUser?.email || 'default';
+    const user = this.auth.currentUser;
+    const userEmail = user?.email || 'default';
     const stored = localStorage.getItem(`payment_methods_${userEmail}`);
     if (stored) {
       try {
         this.paymentMethods = JSON.parse(stored);
+        return;
       } catch (e) {
         console.error('Error cargando medios de pago guardados:', e);
       }
     }
+
+    // Titular por defecto personalizado al usuario en sesión
+    const defaultHolder = user?.displayName || 'Jeon Jungkook';
+    this.paymentMethods = [
+      { id: '1', type: 'VISA', last4: '4821', holder: defaultHolder, isDefault: true },
+      { id: '2', type: 'MERCADOPAGO', last4: 'MP-PAY', holder: user?.email || 'pago@mercadopago.com', isDefault: false },
+      { id: '3', type: 'MASTERCARD', last4: '8812', holder: defaultHolder, isDefault: false }
+    ];
   }
 
   savePaymentMethodsToStorage(): void {
