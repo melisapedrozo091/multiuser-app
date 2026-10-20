@@ -35,9 +35,17 @@
         <textarea [(ngModel)]="formData.reason" placeholder="Podés dejarnos tus comentarios para mejorar el servicio..." class="form-control" rows="3"></textarea>
       </div>
 
+      <!-- Error message -->
+      <div class="alert-error" *ngIf="errorMessage">
+        ⚠️ {{ errorMessage }}
+      </div>
+
       <div class="form-actions">
         <a routerLink="/landing" class="btn btn-secondary">Volver al Inicio</a>
-        <button (click)="sendRequest()" class="btn btn-primary btn-lg">Solicitar Revocación</button>
+        <button (click)="sendRequest()" class="btn btn-primary btn-lg" [disabled]="loading">
+          <span *ngIf="!loading">✉️ Solicitar Revocación</span>
+          <span *ngIf="loading">⏳ Procesando...</span>
+        </button>
       </div>
     </div>
 

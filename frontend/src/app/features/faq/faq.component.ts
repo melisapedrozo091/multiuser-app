@@ -42,7 +42,7 @@ export class FaqComponent {
       items: [
         {
           question: '¿Los cursos entregan Certificado Oficial?',
-          answer: 'Sí. Al completar el 100% de los módulos y presentar el proyecto final de cada curso, se emite automáticamente un Certificado Digital con código QR de validación internacional.',
+          answer: 'Sí. Al completar el 100% de los módulos y presentar el proyecto final de cada curso, se emite automáticamente un Certificado Digital con Certificación Oficial.',
           open: false
         },
         {
@@ -81,7 +81,36 @@ export class FaqComponent {
     }
   ];
 
-  toggleItem(catIndex: number, itemIndex: number): void {
-    this.categories[catIndex].items[itemIndex].open = !this.categories[catIndex].items[itemIndex].open;
+  get filteredCategories(): FaqCategory[] {
+    const term = this.searchText.trim().toLowerCase();
+    if (!term) {
+      return this.categories;
+    }
+
+    return this.categories
+      .map(cat => {
+        const matchingItems = cat.items.filter(
+          item =>
+            item.question.toLowerCase().includes(term) ||
+            item.answer.toLowerCase().includes(term)
+        );
+
+        return {
+          ...cat,
+          items: matchingItems.map(item => ({
+            ...item,
+            open: true // Abre automáticamente las preguntas que coinciden con la búsqueda
+          }))
+        };
+      })
+      .filter(cat => cat.items.length > 0);
+  }
+
+  toggleItem(item: { question: string; answer: string; open: boolean }): void {
+    item.open = !item.open;
+  }
+
+  clearSearch(): void {
+    this.searchText = '';
   }
 }

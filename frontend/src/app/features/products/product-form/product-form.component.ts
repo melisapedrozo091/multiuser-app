@@ -32,18 +32,29 @@ export class ProductFormComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     const idParam = this.route.snapshot.paramMap.get('id');
     if (idParam) {
       this.isEdit = true;
       this.productId = Number(idParam);
-      // Pre-fill form
+      await this.loadProduct(this.productId);
+    }
+  }
+
+  async loadProduct(id: number): Promise<void> {
+    this.loading = true;
+    try {
+      const product = await this.productService.getById(id);
       this.productForm.patchValue({
-        name: 'Producto Ejemplo',
-        description: 'Descripción precargada para edición',
-        price: 150.00,
-        stock: 10
+        name: product.name,
+        description: product.description || '',
+        price: product.price,
+        stock: product.stock
       });
+    } catch (err: any) {
+      this.error = 'No se pudo cargar el producto para editar. Verifica que exista.';
+    } finally {
+      this.loading = false;
     }
   }
 

@@ -36,6 +36,22 @@ export class LoginComponent {
     });
   }
 
+  quickFill(role: 'ADMIN' | 'CLIENTE'): void {
+    this.isRegister = false;
+    this.isResetMode = false;
+    if (role === 'ADMIN') {
+      this.loginForm.patchValue({
+        email: 'admin@sistema.com',
+        password: 'admin123'
+      });
+    } else {
+      this.loginForm.patchValue({
+        email: 'cliente@gmail.com',
+        password: 'cliente123'
+      });
+    }
+  }
+
   toggleMode(): void {
     this.isRegister = !this.isRegister;
     this.isResetMode = false;

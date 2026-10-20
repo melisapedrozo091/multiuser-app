@@ -24,6 +24,14 @@ export class ProductService {
     return res.json();
   }
 
+  async getById(id: number): Promise<Product> {
+    const res = await fetch(`${environment.apiBase}/products/${id}`, {
+      headers: this.getHeaders()
+    });
+    if (!res.ok) throw new Error('Producto no encontrado');
+    return res.json();
+  }
+
   async create(product: Partial<Product>): Promise<Product> {
     const res = await fetch(`${environment.apiBase}/products`, {
       method: 'POST',

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AdminService, DashboardMetrics } from '../../../core/services/admin.service';
 import { CsvExportService } from '../../../core/services/csv-export.service';
+import { PdfExportService } from '../../../core/services/pdf-export.service';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -18,31 +19,10 @@ export class MetricsDashboardComponent implements OnInit {
   loading = true;
   error: string | null = null;
 
-  // Import Modal State
-  showImportModal = false;
-  importJsonText = '';
-  importing = false;
-  importSuccessMsg: string | null = null;
-  importErrorMsg: string | null = null;
-
-  sampleImportJson = `[
-  {
-    "name": "Masterclass en GraphQL & Apollo Server 2026",
-    "description": "Construye APIs eficientes con GraphQL, resolvers y subscripciones en tiempo real.",
-    "price": 159.99,
-    "stock": 40
-  },
-  {
-    "name": "Curso de Microservicios con NestJS y RabbitMQ",
-    "description": "Arquitectura distribuida, mensajería asíncrona y patrones Event-Driven.",
-    "price": 189.00,
-    "stock": 30
-  }
-]`;
-
   constructor(
     private adminService: AdminService,
-    private csvExport: CsvExportService,
+    public csvExport: CsvExportService,
+    private pdfExport: PdfExportService,
     public auth: AuthService
   ) {}
 
@@ -88,41 +68,9 @@ export class MetricsDashboardComponent implements OnInit {
     }
   }
 
-  openImportModal(): void {
-    this.showImportModal = true;
-    this.importJsonText = this.sampleImportJson;
-    this.importSuccessMsg = null;
-    this.importErrorMsg = null;
-  }
-
-  closeImportModal(): void {
-    this.showImportModal = false;
-    this.importSuccessMsg = null;
-    this.importErrorMsg = null;
-  }
-
-  async onProcessImport(): Promise<void> {
-    if (!this.importJsonText.trim()) {
-      this.importErrorMsg = 'Ingresa el contenido JSON o CSV para importar.';
-      return;
-    }
-
-    this.importing = true;
-    this.importErrorMsg = null;
-    this.importSuccessMsg = null;
-
-    try {
-      const parsedCourses = JSON.parse(this.importJsonText);
-      const res = await this.adminService.importCourses(parsedCourses);
-      this.importSuccessMsg = res.message;
-      await this.loadMetrics();
-      setTimeout(() => {
-        this.closeImportModal();
-      }, 2000);
-    } catch (err: any) {
-      this.importErrorMsg = err.message || 'Error al procesar el formato JSON/CSV de cursos.';
-    } finally {
-      this.importing = false;
+  exportReportPdf(): void {
+    if (this.metrics) {
+      this.pdfExport.generateMetricsPdf(this.metrics);
     }
   }
 }

@@ -156,3 +156,54 @@ export async function sendPasswordResetEmail(toEmail: string, displayName: strin
   }
 }
 
+export async function sendArrepentimientoEmail(
+  toEmail: string,
+  fullName: string,
+  trackingNumber: string,
+  orderCode?: string
+): Promise<void> {
+  try {
+    const transport = await getTransporter();
+    const sender = process.env.SMTP_USER ? `"Academia Tech" <${process.env.SMTP_USER}>` : '"Academia Tech" <no-reply@academiatech.com>';
+
+    const htmlContent = `
+      <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+        <div style="background: linear-gradient(135deg, #dc2626 0%, #f97316 100%); padding: 30px; text-align: center; color: #ffffff;">
+          <h1 style="margin: 0; font-size: 24px; font-weight: 700;">🔄 Solicitud de Revocación</h1>
+          <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 15px;">Academia Tech — Ley N° 24.240 / 26.361</p>
+        </div>
+        <div style="padding: 30px; color: #1e293b;">
+          <h2 style="margin-top: 0; color: #0f172a;">Hola, ${fullName} 👋</h2>
+          <p style="font-size: 15px; line-height: 1.6; color: #475569;">
+            Hemos recibido tu solicitud de revocación de compra (Botón de Arrepentimiento) de conformidad con la Ley N° 24.240 de Defensa del Consumidor.
+          </p>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px; margin: 20px 0; text-align: center;">
+            <p style="margin: 0 0 6px 0; font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">N° de Trámite</p>
+            <span style="font-size: 22px; font-weight: 800; color: #dc2626; letter-spacing: 2px;">${trackingNumber}</span>
+            ${orderCode ? `<p style="margin: 10px 0 0 0; font-size: 13px; color: #475569;">Curso/Producto: <strong>${orderCode}</strong></p>` : ''}
+          </div>
+          <p style="font-size: 14px; color: #475569; line-height: 1.6;">
+            El reintegro se procesará en tu medio de pago original dentro de las <strong>48 a 72 horas hábiles</strong>. Podés hacer seguimiento con el número de trámite indicado arriba.
+          </p>
+          <p style="font-size: 13px; color: #94a3b8; margin-top: 20px;">¿Dudas? Escribinos a <a href="mailto:soporte@academiatech.com" style="color: #dc2626;">soporte@academiatech.com</a></p>
+        </div>
+      </div>
+    `;
+
+    const info = await transport.sendMail({
+      from: sender,
+      to: toEmail,
+      subject: `🔄 Solicitud de Revocación Confirmada — Trámite ${trackingNumber}`,
+      text: `Hola ${fullName}, tu solicitud de revocación fue recibida. N° de Trámite: ${trackingNumber}`,
+      html: htmlContent
+    });
+
+    console.log(`✉️ Correo de arrepentimiento enviado a: ${toEmail} | Trámite: ${trackingNumber}`);
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+    if (previewUrl) {
+      console.log(`🔗 Vista previa (Ethereal): ${previewUrl}`);
+    }
+  } catch (error: any) {
+    console.error('❌ Error al enviar correo de arrepentimiento:', error.message);
+  }
+}

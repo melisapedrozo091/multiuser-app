@@ -33,7 +33,8 @@ npm start
 
 ```
 
-La aplicación quedará corriendo en `http://localhost:4200`.
+Frontend disponible en `http://localhost:4200`.
+Backend disponible en `http://localhost:3000`.
 
 ---
 
@@ -45,5 +46,5 @@ El proyecto está versionado y estructurado bajo buenas prácticas de Git:
 git remote add origin https://github.com/melisapedrozo091/multiuser-app.git
 git branch -M main
 git push -u origin main
-
 ```
+

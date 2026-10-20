@@ -9,14 +9,14 @@
         Desarrolla habilidades de alto impacto en Fullstack, DevOps, Inteligencia Artificial y Arquitectura de Software con clases prácticas.
       </p>
       <div class="hero-stats">
-        <div class="stat-item"><span class="stat-icon">🎓</span> 8 Cursos Oficiales</div>
+        <div class="stat-item"><span class="stat-icon">🎓</span> Títulos Oficiales</div>
         <div class="stat-item"><span class="stat-icon">📜</span> Certificados Incluidos</div>
         <div class="stat-item"><span class="stat-icon">♾️</span> Acceso de por Vida</div>
       </div>
     </div>
   </div>
 
-  <!-- CONTROL BAR: SEARCH, CURRENCY TOGGLE & CSV EXPORT -->
+  <!-- CONTROL BAR: SEARCH, CURRENCY TOGGLE & CSV IMPORT/EXPORT (HORIZONTAL ROW) -->
   <div class="controls-bar card">
     <div class="search-box">
       <span class="search-icon">🔍</span>
@@ -49,9 +49,14 @@
       </div>
     </div>
 
+    <!-- CSV ACTIONS (NO RELOAD BUTTON, CSV ONLY) -->
     <div class="action-buttons">
-      <button class="btn btn-secondary" *ngIf="isAdmin" (click)="exportCsv()">📥 Exportar CSV</button>
-      <button class="btn btn-primary" *ngIf="isAdmin" (click)="loadProducts()">🔄 Recargar</button>
+      <button class="btn-csv-export" (click)="exportCsv()" title="Descargar catálogo en CSV">
+        <i class="fa-solid fa-file-csv"></i> Exportar CSV
+      </button>
+      <button class="btn-csv-import" *ngIf="isAdmin" (click)="openImportModal()" title="Cargar nuevos cursos con planilla CSV">
+        <i class="fa-solid fa-file-import"></i> Importar CSV
+      </button>
     </div>
   </div>
 
@@ -213,6 +218,54 @@
       <div class="modal-footer" *ngIf="!purchaseCompleted">
         <button class="btn btn-secondary" (click)="closeCheckoutModal()">Cancelar</button>
         <button class="btn btn-primary" (click)="confirmCheckout()">✅ Pagar e Inscribirme</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: IMPORTAR CURSOS MEDIANTE ARCHIVO O PLANILLA CSV (SOLO CSV) -->
+  <div class="modal-overlay" *ngIf="showImportModal" (click)="closeImportModal()">
+    <div class="modal-card modal-large" (click)="$event.stopPropagation()">
+      <button class="close-btn" (click)="closeImportModal()">✖</button>
+      
+      <div class="modal-header-vertical">
+        <span class="modal-badge"><i class="fa-solid fa-file-csv me-1"></i> Gestión Académica</span>
+        <h2>Importar Cursos (Formato CSV)</h2>
+        <p>
+          Sube un archivo <strong>.csv</strong> generado desde Excel o Google Sheets para registrar nuevos cursos automáticamente en la base de datos:
+        </p>
+      </div>
+
+      <div class="modal-body">
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; background: rgba(255,255,255,0.03); padding: 14px; border-radius: 12px; border: 1px solid var(--border-color, rgba(255,255,255,0.1)); align-items: center; justify-content: space-between;">
+          <label class="btn btn-primary" style="padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-folder-open"></i> 📂 Cargar Archivo CSV (.csv)
+            <input type="file" accept=".csv, .txt" (change)="onFileSelected($event)" style="display: none;" />
+          </label>
+
+          <button (click)="downloadSampleCsv()" class="btn btn-secondary" style="padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-download"></i> 📥 Descargar Plantilla CSV
+          </button>
+        </div>
+
+        <label style="display: block; font-size: 0.85rem; color: var(--text-muted, #cbd5e1); margin-bottom: 6px;">
+          Vista Previa o Pegar Filas CSV (Columnas requeridas: <code>Nombre, Descripcion, Precio, Stock</code>):
+        </label>
+        <textarea [(ngModel)]="importCsvText" rows="6" placeholder="Nombre,Descripcion,Precio,Stock&#10;&quot;Masterclass en GraphQL 2026&quot;,&quot;Construye APIs eficientes con GraphQL.&quot;,159.99,40" style="width: 100%; padding: 14px; font-family: monospace; font-size: 0.85rem; border-radius: 10px; border: 1px solid var(--border-color, rgba(255,255,255,0.15)); background: #0f172a; color: #38bdf8; margin-bottom: 15px; resize: vertical; box-sizing: border-box;"></textarea>
+
+        <div class="alert alert-danger" *ngIf="importErrorMsg" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 12px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 15px;">
+          ⚠️ {{ importErrorMsg }}
+        </div>
+
+        <div class="alert alert-success" *ngIf="importSuccessMsg" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; padding: 12px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 15px;">
+          ✅ {{ importSuccessMsg }}
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button (click)="closeImportModal()" class="btn btn-secondary">Cancelar</button>
+        <button (click)="onProcessImport()" [disabled]="importing" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+          {{ importing ? 'Importando...' : '📥 Procesar e Importar Cursos (CSV)' }}
+        </button>
       </div>
     </div>
   </div>

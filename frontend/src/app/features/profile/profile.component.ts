@@ -1,15 +1,16 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { PdfExportService } from '../../core/services/pdf-export.service';
 
 export interface UserCourse {
   id: number;
   name: string;
   category: string;
   icon: string;
-  status: 'EN_CURSO' | 'FINALIZADO' | 'ANULADO';
+  status: 'INSCRIPTO' | 'EN_CURSO' | 'FINALIZADO';
   progress: number;
   lastAccess: string;
   certificateId?: string;
@@ -30,9 +31,9 @@ export interface PaymentMethod {
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.css']
 })
-export class ProfileComponent {
+export class ProfileComponent implements OnInit {
   activeTab: 'cursos' | 'certificados' | 'pagos' | 'seguridad' = 'cursos';
-  courseFilter: 'TODOS' | 'EN_CURSO' | 'FINALIZADOS' | 'ANULADOS' = 'TODOS';
+  courseFilter: 'TODOS' | 'INSCRIPTO' | 'EN_CURSO' | 'FINALIZADOS' = 'TODOS';
 
   // Password change form
   currentPassword = '';
@@ -42,7 +43,7 @@ export class ProfileComponent {
   successMessage: string | null = null;
   errorMessage: string | null = null;
 
-  // Mock User Courses Data
+  // Mock User Courses Data (Informativo de Cursos al Día)
   userCourses: UserCourse[] = [
     {
       id: 1,
@@ -51,7 +52,7 @@ export class ProfileComponent {
       icon: '💻',
       status: 'EN_CURSO',
       progress: 65,
-      lastAccess: 'Hoy a las 14:30'
+      lastAccess: 'Módulo 3: Servicios REST y Autenticación'
     },
     {
       id: 2,
@@ -60,7 +61,7 @@ export class ProfileComponent {
       icon: '⚡',
       status: 'FINALIZADO',
       progress: 100,
-      lastAccess: 'Ayer',
+      lastAccess: 'Curso finalizado con éxito',
       certificateId: 'CERT-TS-2026-9812'
     },
     {
@@ -68,18 +69,18 @@ export class ProfileComponent {
       name: 'Curso Avanzado de Bases de Datos & Prisma ORM',
       category: 'Bases de Datos',
       icon: '🗄️',
-      status: 'EN_CURSO',
-      progress: 30,
-      lastAccess: 'Hace 2 días'
+      status: 'INSCRIPTO',
+      progress: 0,
+      lastAccess: 'Inscripción confirmada - Clases habilitadas'
     },
     {
       id: 4,
       name: 'DevOps Professional: Docker, Kubernetes & CI/CD Pipelines',
       category: 'DevOps',
       icon: '🐳',
-      status: 'ANULADO',
-      progress: 0,
-      lastAccess: 'Revocado por Botón de Arrepentimiento'
+      status: 'EN_CURSO',
+      progress: 30,
+      lastAccess: 'Módulo 1: Fundamentos de Contenedores Docker'
     }
   ];
 
@@ -90,13 +91,46 @@ export class ProfileComponent {
     { id: '3', type: 'MASTERCARD', last4: '8812', holder: 'Carlos López', isDefault: false }
   ];
 
+  // Payment Method Modal & Form State
+  showPaymentModal = false;
+  editingPaymentMethodId: string | null = null;
+  pmType: 'VISA' | 'MASTERCARD' | 'MERCADOPAGO' = 'VISA';
+  pmLast4 = '';
+  pmHolder = '';
+  pmIsDefault = false;
+  paymentFormError: string | null = null;
+
   // Purchase Invoices History
   invoices = [
     { id: 'FAC-2026-001', date: '01/10/2026', concept: 'Inscripción Fullstack & TypeScript', amount: '$ 349.49 USD', status: 'Pagado' },
     { id: 'FAC-2026-002', date: '15/09/2026', concept: 'Curso Prisma ORM', amount: '$ 89.99 USD', status: 'Pagado' }
   ];
 
-  constructor(public auth: AuthService) {}
+  constructor(
+    public auth: AuthService,
+    private pdfExport: PdfExportService
+  ) {}
+
+  ngOnInit(): void {
+    this.loadPaymentMethods();
+  }
+
+  loadPaymentMethods(): void {
+    const userEmail = this.auth.currentUser?.email || 'default';
+    const stored = localStorage.getItem(`payment_methods_${userEmail}`);
+    if (stored) {
+      try {
+        this.paymentMethods = JSON.parse(stored);
+      } catch (e) {
+        console.error('Error cargando medios de pago guardados:', e);
+      }
+    }
+  }
+
+  savePaymentMethodsToStorage(): void {
+    const userEmail = this.auth.currentUser?.email || 'default';
+    localStorage.setItem(`payment_methods_${userEmail}`, JSON.stringify(this.paymentMethods));
+  }
 
   setTab(tab: 'cursos' | 'certificados' | 'pagos' | 'seguridad'): void {
     this.activeTab = tab;
@@ -104,19 +138,105 @@ export class ProfileComponent {
     this.successMessage = null;
   }
 
-  setCourseFilter(filter: 'TODOS' | 'EN_CURSO' | 'FINALIZADOS' | 'ANULADOS'): void {
+  setCourseFilter(filter: 'TODOS' | 'INSCRIPTO' | 'EN_CURSO' | 'FINALIZADOS'): void {
     this.courseFilter = filter;
   }
 
   get filteredCourses(): UserCourse[] {
+    if (this.courseFilter === 'INSCRIPTO') return this.userCourses.filter(c => c.status === 'INSCRIPTO');
     if (this.courseFilter === 'EN_CURSO') return this.userCourses.filter(c => c.status === 'EN_CURSO');
     if (this.courseFilter === 'FINALIZADOS') return this.userCourses.filter(c => c.status === 'FINALIZADO');
-    if (this.courseFilter === 'ANULADOS') return this.userCourses.filter(c => c.status === 'ANULADO');
     return this.userCourses;
   }
 
   get completedCertificates(): UserCourse[] {
     return this.userCourses.filter(c => c.status === 'FINALIZADO');
+  }
+
+  // --- CRUD MEDIOS DE PAGO ---
+  openAddPaymentModal(): void {
+    this.editingPaymentMethodId = null;
+    this.pmType = 'VISA';
+    this.pmLast4 = '';
+    this.pmHolder = this.auth.currentUser?.displayName || '';
+    this.pmIsDefault = this.paymentMethods.length === 0;
+    this.paymentFormError = null;
+    this.showPaymentModal = true;
+  }
+
+  openEditPaymentModal(pm: PaymentMethod): void {
+    this.editingPaymentMethodId = pm.id;
+    this.pmType = pm.type;
+    this.pmLast4 = pm.last4;
+    this.pmHolder = pm.holder;
+    this.pmIsDefault = pm.isDefault;
+    this.paymentFormError = null;
+    this.showPaymentModal = true;
+  }
+
+  closePaymentModal(): void {
+    this.showPaymentModal = false;
+    this.editingPaymentMethodId = null;
+    this.paymentFormError = null;
+  }
+
+  savePaymentMethod(): void {
+    if (!this.pmHolder.trim()) {
+      this.paymentFormError = 'Ingresa el nombre del titular.';
+      return;
+    }
+    if (!this.pmLast4.trim()) {
+      this.paymentFormError = 'Ingresa los últimos 4 dígitos o identificación del medio de pago.';
+      return;
+    }
+
+    if (this.pmIsDefault) {
+      this.paymentMethods.forEach(p => p.isDefault = false);
+    }
+
+    if (this.editingPaymentMethodId) {
+      // Edit existing
+      const index = this.paymentMethods.findIndex(p => p.id === this.editingPaymentMethodId);
+      if (index !== -1) {
+        this.paymentMethods[index] = {
+          id: this.editingPaymentMethodId,
+          type: this.pmType,
+          last4: this.pmLast4.trim(),
+          holder: this.pmHolder.trim(),
+          isDefault: this.pmIsDefault
+        };
+      }
+    } else {
+      // Create new
+      const newId = Date.now().toString();
+      this.paymentMethods.push({
+        id: newId,
+        type: this.pmType,
+        last4: this.pmLast4.trim(),
+        holder: this.pmHolder.trim(),
+        isDefault: this.pmIsDefault || this.paymentMethods.length === 0
+      });
+    }
+
+    this.savePaymentMethodsToStorage();
+    this.closePaymentModal();
+  }
+
+  deletePaymentMethod(id: string): void {
+    if (confirm('¿Estás seguro de que deseas eliminar este medio de pago?')) {
+      this.paymentMethods = this.paymentMethods.filter(p => p.id !== id);
+      if (this.paymentMethods.length > 0 && !this.paymentMethods.some(p => p.isDefault)) {
+        this.paymentMethods[0].isDefault = true;
+      }
+      this.savePaymentMethodsToStorage();
+    }
+  }
+
+  setDefaultPaymentMethod(id: string): void {
+    this.paymentMethods.forEach(p => {
+      p.isDefault = (p.id === id);
+    });
+    this.savePaymentMethodsToStorage();
   }
 
   async onChangePassword(): Promise<void> {
@@ -148,58 +268,14 @@ export class ProfileComponent {
   }
 
   downloadCertificatePdf(course: UserCourse): void {
-    const user = this.auth.currentUser;
-    const content = `
-====================================================
-      ACADEMIA TECH - CERTIFICADO OFICIAL DE APROBACIÓN
-====================================================
-Certificamos que el estudiante:
-${user?.displayName || user?.email || 'Alumno Registrado'}
-
-ha completado satisfactoriamente el 100% de los módulos del curso:
-"${course.name}"
-
-Código de Validación QR: ${course.certificateId || 'CERT-2026-8812'}
-Fecha de Emisión: ${new Date().toLocaleDateString('es-AR')}
-Estado: CERTIFICADO OFICIAL ACREDITADO
-
-----------------------------------------------------
-Verificación Online: https://academiatech.com/verify/${course.certificateId}
-Academia Tech © 2026 - Firma del Director Académico
-====================================================
-    `;
-
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Certificado_${course.name.replace(/\s+/g, '_')}.txt`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    const studentName = this.auth.currentUser?.displayName || this.auth.currentUser?.email || 'Estudiante Registrado';
+    const certId = course.certificateId || `CERT-${course.id}-2026`;
+    this.pdfExport.generateCertificatePdf(studentName, course.name, certId);
   }
 
   downloadInvoicePdf(invoice: any): void {
-    const content = `
-====================================================
-          COMPROBANTE DE PAGO / FACTURA
-====================================================
-Factura N°: ${invoice.id}
-Fecha: ${invoice.date}
-Cliente: ${this.auth.currentUser?.displayName || this.auth.currentUser?.email}
-Concepto: ${invoice.concept}
-Monto Total: ${invoice.amount}
-Estado: ${invoice.status}
-----------------------------------------------------
-Academia Tech S.A. - CUIT: 30-71234567-8
-====================================================
-    `;
-
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Factura_${invoice.id}.txt`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    const clientName = this.auth.currentUser?.displayName || 'Cliente Registrado';
+    const clientEmail = this.auth.currentUser?.email || 'cliente@ejemplo.com';
+    this.pdfExport.generateInvoicePdf(clientName, clientEmail, invoice);
   }
 }

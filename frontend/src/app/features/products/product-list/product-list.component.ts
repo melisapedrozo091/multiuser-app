@@ -6,6 +6,7 @@ import { Product } from '../../../core/models/app-models';
 import { ProductService } from '../../../core/services/product.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CsvExportService } from '../../../core/services/csv-export.service';
+import { AdminService } from '../../../core/services/admin.service';
 import { FilterPipe } from '../../../core/pipes/filter.pipe';
 import { ProductCardComponent } from '../../../shared/components/product-card/product-card.component';
 
@@ -39,6 +40,13 @@ export class ProductListComponent implements OnInit {
   showCheckoutModal = false;
   purchaseCompleted = false;
 
+  // CSV Import State
+  showImportModal = false;
+  importCsvText = '';
+  importing = false;
+  importSuccessMsg: string | null = null;
+  importErrorMsg: string | null = null;
+
   categories = [
     { label: 'Todos los Cursos', value: 'TODOS', icon: '🌟' },
     { label: 'Fullstack & Web', value: 'FULLSTACK', icon: '💻' },
@@ -56,7 +64,7 @@ export class ProductListComponent implements OnInit {
     },
     {
       question: '¿Los cursos incluyen certificado oficial?',
-      answer: 'Sí, al finalizar el 100% de las clases y proyectos prácticos se te emite un certificado digital con código QR de verificación.',
+      answer: 'Sí, al finalizar el 100% de las clases y proyectos prácticos se te emite un certificado digital con Certificación Oficial.',
       open: false
     },
     {
@@ -135,6 +143,7 @@ export class ProductListComponent implements OnInit {
     public auth: AuthService,
     public currencyService: CurrencyService,
     private csvExport: CsvExportService,
+    private adminService: AdminService,
     private router: Router
   ) {}
 
@@ -196,6 +205,66 @@ export class ProductListComponent implements OnInit {
 
   exportCsv(): void {
     this.csvExport.exportProductsToCsv(this.filteredProducts);
+  }
+
+  // --- CSV IMPORT (SOLO FORMATO CSV) ---
+  openImportModal(): void {
+    this.showImportModal = true;
+    this.importCsvText = '';
+    this.importSuccessMsg = null;
+    this.importErrorMsg = null;
+  }
+
+  closeImportModal(): void {
+    this.showImportModal = false;
+    this.importCsvText = '';
+    this.importSuccessMsg = null;
+    this.importErrorMsg = null;
+  }
+
+  downloadSampleCsv(): void {
+    this.csvExport.downloadSampleCsvTemplate();
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.importCsvText = (e.target?.result as string) || '';
+      };
+      reader.readAsText(file);
+    }
+  }
+
+  async onProcessImport(): Promise<void> {
+    if (!this.importCsvText.trim()) {
+      this.importErrorMsg = 'Por favor selecciona un archivo CSV o pega el contenido en la casilla.';
+      return;
+    }
+
+    this.importing = true;
+    this.importErrorMsg = null;
+    this.importSuccessMsg = null;
+
+    try {
+      const parsedCourses = this.csvExport.parseCsvToCourses(this.importCsvText);
+      if (!parsedCourses || parsedCourses.length === 0) {
+        throw new Error('No se encontraron cursos válidos en el archivo CSV ingresado.');
+      }
+
+      const res = await this.adminService.importCourses(parsedCourses);
+      this.importSuccessMsg = res.message;
+      await this.loadProducts();
+      setTimeout(() => {
+        this.closeImportModal();
+      }, 2000);
+    } catch (err: any) {
+      this.importErrorMsg = err.message || 'Error al procesar el archivo CSV de cursos.';
+    } finally {
+      this.importing = false;
+    }
   }
 
   // Course Details & Syllabus

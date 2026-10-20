@@ -18,6 +18,7 @@ export class ChatRoomComponent implements OnInit {
   messages: ChatMessage[] = [];
   newMessage = '';
   loading = false;
+  sending = false;
 
   constructor(
     private chatService: ChatService,
@@ -29,6 +30,7 @@ export class ChatRoomComponent implements OnInit {
   }
 
   async loadMessages(): Promise<void> {
+    this.loading = true;
     try {
       this.messages = await this.chatService.getMessages();
     } catch (err) {
@@ -36,14 +38,25 @@ export class ChatRoomComponent implements OnInit {
         { id: '1', senderUid: 'system', senderName: 'Soporte', message: '¡Bienvenido al foro / chat en vivo!', timestamp: new Date().toISOString() },
         { id: '2', senderUid: 'usr_2', senderName: 'Carlos', message: '¿Alguien sabe disponibilidad del servidor VPS?', timestamp: new Date().toISOString() }
       ];
+    } finally {
+      this.loading = false;
+    }
+    setTimeout(() => this.scrollToBottom(), 100);
+  }
+
+  scrollToBottom(): void {
+    const container = document.querySelector('.messages-container');
+    if (container) {
+      container.scrollTop = container.scrollHeight;
     }
   }
 
   async onSend(): Promise<void> {
-    if (!this.newMessage.trim()) return;
+    if (!this.newMessage.trim() || this.sending) return;
 
     const text = this.newMessage;
     this.newMessage = '';
+    this.sending = true;
 
     try {
       const msg = await this.chatService.sendMessage(text);
@@ -58,6 +71,9 @@ export class ChatRoomComponent implements OnInit {
         message: text,
         timestamp: new Date().toISOString()
       });
+    } finally {
+      this.sending = false;
     }
+    setTimeout(() => this.scrollToBottom(), 50);
   }
 }

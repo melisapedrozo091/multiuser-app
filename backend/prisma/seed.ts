@@ -1,18 +1,23 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Seeding database...');
 
+  const hashedAdminPass = bcrypt.hashSync('admin123', 10);
+  const hashedClientPass = bcrypt.hashSync('cliente123', 10);
+  const hashedMelisaPass = bcrypt.hashSync('melisa123', 10);
+
   // Create default admin user
   const admin = await prisma.user.upsert({
     where: { email: 'admin@sistema.com' },
-    update: { password: 'admin123' },
+    update: { password: hashedAdminPass, role: 'ADMIN' },
     create: {
       id: 'usr_admin',
       email: 'admin@sistema.com',
-      password: 'admin123',
+      password: hashedAdminPass,
       displayName: 'Administrador General',
       role: 'ADMIN'
     }
@@ -21,12 +26,25 @@ async function main() {
   // Create default client user
   const client = await prisma.user.upsert({
     where: { email: 'cliente@gmail.com' },
-    update: { password: 'cliente123' },
+    update: { password: hashedClientPass, role: 'CLIENTE' },
     create: {
       id: 'usr_client',
       email: 'cliente@gmail.com',
-      password: 'cliente123',
+      password: hashedClientPass,
       displayName: 'Carlos López',
+      role: 'CLIENTE'
+    }
+  });
+
+  // Create user for Melisa Pedrozo as simple CLIENTE
+  const melisaUser = await prisma.user.upsert({
+    where: { email: 'melisapedrozo091@gmail.com' },
+    update: { password: hashedMelisaPass, role: 'CLIENTE' },
+    create: {
+      id: 'usr_melisa',
+      email: 'melisapedrozo091@gmail.com',
+      password: hashedMelisaPass,
+      displayName: 'Melisa Pedrozo',
       role: 'CLIENTE'
     }
   });
@@ -120,8 +138,7 @@ async function main() {
     });
   }
 
-
-  console.log('✅ Base de datos sembrada con éxito.');
+  console.log('✅ Base de datos sembrada con éxito y claves encriptadas con Bcrypt.');
 }
 
 main()

@@ -39,15 +39,15 @@
     <div class="tab-content" *ngIf="activeTab === 'cursos'">
       <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
         <h3 style="font-size: 1.25rem; font-weight: 600; margin: 0; color: var(--text-color, #fff);">
-          📚 Panel de Mis Cursos Acreditados
+          📚 Panel Informativo de Mis Cursos al Día
         </h3>
         
         <!-- Status Filter Pills -->
         <div class="filter-pills" style="display: flex; gap: 8px;">
           <button [class.active-pill]="courseFilter === 'TODOS'" (click)="setCourseFilter('TODOS')" class="pill-btn">Todos</button>
+          <button [class.active-pill]="courseFilter === 'INSCRIPTO'" (click)="setCourseFilter('INSCRIPTO')" class="pill-btn">Inscriptos</button>
           <button [class.active-pill]="courseFilter === 'EN_CURSO'" (click)="setCourseFilter('EN_CURSO')" class="pill-btn">En Curso</button>
           <button [class.active-pill]="courseFilter === 'FINALIZADOS'" (click)="setCourseFilter('FINALIZADOS')" class="pill-btn">Finalizados</button>
-          <button [class.active-pill]="courseFilter === 'ANULADOS'" (click)="setCourseFilter('ANULADOS')" class="pill-btn">Anulados</button>
         </div>
       </div>
 
@@ -64,36 +64,45 @@
 
             <!-- Status Badge -->
             <div>
+              <span *ngIf="course.status === 'INSCRIPTO'" class="status-badge status-enrolled"><i class="fa-solid fa-clipboard-check me-1"></i> Inscripto</span>
               <span *ngIf="course.status === 'EN_CURSO'" class="status-badge status-progress"><i class="fa-solid fa-spinner fa-spin me-1"></i> En Curso</span>
               <span *ngIf="course.status === 'FINALIZADO'" class="status-badge status-completed"><i class="fa-solid fa-circle-check me-1"></i> Finalizado</span>
-              <span *ngIf="course.status === 'ANULADO'" class="status-badge status-canceled"><i class="fa-solid fa-ban me-1"></i> Anulado</span>
             </div>
           </div>
 
           <!-- Progress bar -->
-          <div *ngIf="course.status !== 'ANULADO'" style="margin-top: 5px;">
+          <div style="margin-top: 5px;">
             <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">
               <span>Progreso de Clases</span>
               <span><strong>{{ course.progress }}%</strong></span>
             </div>
             <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden;">
-              <div [style.width.%]="course.progress" [style.background]="course.status === 'FINALIZADO' ? '#10b981' : '#6366f1'" style="height: 100%; transition: width 0.4s ease;"></div>
+              <div [style.width.%]="course.progress" [style.background]="course.status === 'FINALIZADO' ? '#10b981' : (course.status === 'INSCRIPTO' ? '#f59e0b' : '#6366f1')" style="height: 100%; transition: width 0.4s ease;"></div>
             </div>
           </div>
 
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; font-size: 0.8rem; color: #94a3b8;">
-            <span><i class="fa-solid fa-clock me-1"></i> {{ course.lastAccess }}</span>
-            <button *ngIf="course.status === 'EN_CURSO'" [routerLink]="['/products']" class="btn btn-sm btn-primary" style="padding: 6px 16px; border-radius: 6px; font-size: 0.8rem; background: #6366f1; color: #fff; border: none; cursor: pointer;">
-              <i class="fa-solid fa-play me-1"></i> Continuar Aprendizaje
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; font-size: 0.82rem; color: #94a3b8;">
+            <span><i class="fa-solid fa-circle-info me-1 text-primary"></i> {{ course.lastAccess }}</span>
+            
+            <!-- Acciones según estado: únicamente descarga si está FINALIZADO -->
+            <button *ngIf="course.status === 'FINALIZADO'" (click)="downloadCertificatePdf(course)" class="btn btn-sm btn-success" style="padding: 6px 16px; border-radius: 8px; font-size: 0.82rem; background: #10b981; color: #fff; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 600; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);">
+              <i class="fa-solid fa-file-pdf"></i> Descargar Certificado
             </button>
-            <button *ngIf="course.status === 'FINALIZADO'" (click)="downloadCertificatePdf(course)" class="btn btn-sm btn-success" style="padding: 6px 16px; border-radius: 6px; font-size: 0.8rem; background: #10b981; color: #fff; border: none; cursor: pointer;">
-              <i class="fa-solid fa-file-pdf me-1"></i> Descargar Certificado
-            </button>
+
+            <!-- En curso: solo texto informativo de estado sin acción -->
+            <span *ngIf="course.status === 'EN_CURSO'" style="color: #818cf8; font-weight: 600; font-size: 0.82rem; background: rgba(99, 102, 241, 0.12); padding: 5px 12px; border-radius: 6px; border: 1px solid rgba(99, 102, 241, 0.25);">
+              <i class="fa-solid fa-graduation-cap me-1"></i> Estado: En curso
+            </span>
+
+            <!-- Inscripto: solo texto informativo de estado sin acción -->
+            <span *ngIf="course.status === 'INSCRIPTO'" style="color: #fbbf24; font-weight: 600; font-size: 0.82rem; background: rgba(245, 158, 11, 0.12); padding: 5px 12px; border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.25);">
+              <i class="fa-solid fa-clock-rotate-left me-1"></i> Estado: Inscripto
+            </span>
           </div>
         </div>
 
         <div *ngIf="filteredCourses.length === 0" style="text-align: center; padding: 30px; color: #94a3b8;">
-          No se encontraron cursos registrados bajo esta categoría.
+          No se encontraron cursos registrados bajo este estado.
         </div>
       </div>
     </div>
@@ -109,15 +118,15 @@
           <div>
             <div style="font-size: 2rem; margin-bottom: 10px;">🏆</div>
             <h4 style="font-size: 1.1rem; font-weight: 700; margin: 0 0 8px 0; color: var(--text-color, #fff);">{{ cert.name }}</h4>
-            <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 12px;">Emisión: 01 de Octubre de 2026</p>
+            <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 12px;">Emisión Oficial: 01 de Octubre de 2026</p>
             <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); padding: 8px 12px; border-radius: 8px; font-size: 0.75rem; color: #34d399; display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
-              <i class="fa-solid fa-qrcode" style="font-size: 1.2rem;"></i>
-              <span>Verificación QR Acreditada: <strong>{{ cert.certificateId }}</strong></span>
+              <i class="fa-solid fa-certificate" style="font-size: 1.2rem;"></i>
+              <span>Certificación Oficial Acreditada: <strong>{{ cert.certificateId }}</strong></span>
             </div>
           </div>
 
           <button (click)="downloadCertificatePdf(cert)" class="btn btn-success" style="width: 100%; padding: 10px; border-radius: 8px; background: #10b981; color: #fff; font-weight: 600; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <i class="fa-solid fa-download"></i> Descargar Certificado (PDF)
+            <i class="fa-solid fa-download"></i> Descargar Certificado Oficial (PDF)
           </button>
         </div>
 
@@ -129,20 +138,48 @@
 
     <!-- TAB 3: MEDIOS DE PAGO & FACTURAS -->
     <div class="tab-content" *ngIf="activeTab === 'pagos'">
-      <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 20px; color: var(--text-color, #fff);">
-        💳 Tarjetas y Formas de Pago Guardadas
-      </h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+        <h3 style="font-size: 1.25rem; font-weight: 600; margin: 0; color: var(--text-color, #fff);">
+          💳 Tarjetas y Formas de Pago Guardadas
+        </h3>
+        <button (click)="openAddPaymentModal()" class="btn btn-sm btn-primary" style="padding: 8px 16px; border-radius: 8px; font-weight: 600; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #fff; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-plus"></i> Agregar Medio de Pago
+        </button>
+      </div>
 
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 15px; margin-bottom: 30px;">
-        <div *ngFor="let pm of paymentMethods" style="background: var(--bg-hover, rgba(255,255,255,0.04)); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 18px; position: relative;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <span style="font-weight: 700; font-size: 1.1rem; color: #818cf8;">
-              <i class="fa-solid fa-credit-card me-1"></i> {{ pm.type }}
-            </span>
-            <span *ngIf="pm.isDefault" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 600;">Predeterminada</span>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 15px; margin-bottom: 30px;">
+        <div *ngFor="let pm of paymentMethods" style="background: var(--bg-hover, rgba(255,255,255,0.04)); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 18px; position: relative; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="font-weight: 700; font-size: 1.1rem; color: #818cf8;">
+                <i class="fa-solid fa-credit-card me-1"></i> {{ pm.type }}
+              </span>
+              <span *ngIf="pm.isDefault" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.7rem; padding: 3px 8px; border-radius: 10px; font-weight: 600;">Predeterminada</span>
+            </div>
+            <p style="font-size: 1.1rem; font-weight: 600; letter-spacing: 2px; margin: 0 0 6px 0; color: #fff;">•••• •••• •••• {{ pm.last4 }}</p>
+            <p style="font-size: 0.8rem; color: #94a3b8; margin: 0 0 15px 0;">Titular: {{ pm.holder }}</p>
           </div>
-          <p style="font-size: 1.1rem; font-weight: 600; letter-spacing: 2px; margin: 0 0 6px 0; color: #fff;">•••• •••• •••• {{ pm.last4 }}</p>
-          <p style="font-size: 0.8rem; color: #94a3b8; margin: 0;">Titular: {{ pm.holder }}</p>
+
+          <!-- Card Action Buttons -->
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px; font-size: 0.8rem;">
+            <button *ngIf="!pm.isDefault" (click)="setDefaultPaymentMethod(pm.id)" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; padding: 0;" title="Marcar como predeterminada">
+              <i class="fa-regular fa-star me-1"></i> Predeterminada
+            </button>
+            <span *ngIf="pm.isDefault" style="color: #34d399; font-size: 0.75rem;"><i class="fa-solid fa-check-double me-1"></i> Principal</span>
+
+            <div style="display: flex; gap: 8px;">
+              <button (click)="openEditPaymentModal(pm)" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer;">
+                <i class="fa-solid fa-pen"></i> Editar
+              </button>
+              <button (click)="deletePaymentMethod(pm.id)" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer;">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="paymentMethods.length === 0" style="grid-column: 1 / -1; text-align: center; padding: 30px; color: #94a3b8; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.1);">
+          No tienes medios de pago guardados. Haz clic en <strong>"+ Agregar Medio de Pago"</strong> para registrar tu primera tarjeta.
         </div>
       </div>
 
@@ -159,10 +196,61 @@
           <div style="display: flex; align-items: center; gap: 15px;">
             <span style="font-weight: 700; color: #34d399;">{{ inv.amount }}</span>
             <button (click)="downloadInvoicePdf(inv)" class="btn btn-sm btn-secondary" style="padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; background: rgba(255,255,255,0.1); color: #fff; border: none; cursor: pointer;">
-              <i class="fa-solid fa-file-arrow-down me-1"></i> Factura
+              <i class="fa-solid fa-file-arrow-down me-1"></i> Factura PDF
             </button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- MODAL: AGREGAR / EDITAR MEDIO DE PAGO -->
+    <div class="modal-backdrop" *ngIf="showPaymentModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+      <div class="modal-card" style="background: #1e293b; width: 100%; max-width: 500px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.15); padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h3 style="font-size: 1.3rem; font-weight: 700; margin: 0; color: #fff; display: flex; align-items: center; gap: 10px;">
+            <i class="fa-solid fa-credit-card text-primary"></i> {{ editingPaymentMethodId ? 'Editar Medio de Pago' : 'Nuevo Medio de Pago' }}
+          </h3>
+          <button (click)="closePaymentModal()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer;">&times;</button>
+        </div>
+
+        <form (ngSubmit)="savePaymentMethod()" style="display: flex; flex-direction: column; gap: 15px;">
+          <div>
+            <label style="display: block; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Tipo de Tarjeta / Plataforma</label>
+            <select [(ngModel)]="pmType" name="pmType" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: #0f172a; color: #fff;">
+              <option value="VISA">Visa</option>
+              <option value="MASTERCARD">MasterCard</option>
+              <option value="MERCADOPAGO">Mercado Pago / Wallet</option>
+            </select>
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Nombre del Titular</label>
+            <input type="text" [(ngModel)]="pmHolder" name="pmHolder" placeholder="Ej: Melisa Pedrozo" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: #0f172a; color: #fff;" />
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px;">Últimos 4 dígitos o ID de pago</label>
+            <input type="text" [(ngModel)]="pmLast4" name="pmLast4" maxlength="16" placeholder="Ej: 4821 o MP-991" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: #0f172a; color: #fff;" />
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <input type="checkbox" id="pmIsDefault" [(ngModel)]="pmIsDefault" name="pmIsDefault" style="width: 18px; height: 18px; cursor: pointer;" />
+            <label for="pmIsDefault" style="font-size: 0.85rem; color: #cbd5e1; cursor: pointer;">Establecer como medio de pago predeterminado</label>
+          </div>
+
+          <div class="alert alert-danger" *ngIf="paymentFormError" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 10px; border-radius: 8px; font-size: 0.85rem;">
+            ⚠️ {{ paymentFormError }}
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+            <button type="button" (click)="closePaymentModal()" style="padding: 10px 18px; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; border: none; cursor: pointer;">
+              Cancelar
+            </button>
+            <button type="submit" style="padding: 10px 20px; border-radius: 8px; background: #6366f1; color: #fff; border: none; font-weight: 600; cursor: pointer;">
+              💾 {{ editingPaymentMethodId ? 'Guardar Cambios' : 'Guardar Medio de Pago' }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 

@@ -12,12 +12,12 @@
 
     <!-- Admin Action Buttons -->
     <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-      <button (click)="openImportModal()" class="btn btn-secondary" style="padding: 10px 18px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 8px; background: rgba(99, 102, 241, 0.2); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); cursor: pointer;">
-        <i class="fa-solid fa-file-import"></i> Importar Cursos (CSV/JSON)
+      <button (click)="exportReportCsv()" class="btn btn-secondary" style="padding: 10px 18px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 8px; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); cursor: pointer;">
+        <i class="fa-solid fa-file-csv"></i> Exportar CSV
       </button>
 
-      <button (click)="exportReportCsv()" class="btn btn-primary" style="padding: 10px 18px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
-        <i class="fa-solid fa-file-export"></i> Exportar Informe a CSV
+      <button (click)="exportReportPdf()" class="btn btn-primary" style="padding: 10px 18px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%); color: #ffffff; border: none; cursor: pointer; box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);">
+        <i class="fa-solid fa-file-pdf"></i> Exportar PDF
       </button>
     </div>
   </div>
@@ -126,39 +126,4 @@
       </div>
     </div>
   </ng-container>
-
-  <!-- MODAL: IMPORTAR CURSOS MASIVAMENTE (ADMIN ONLY) -->
-  <div class="modal-backdrop" *ngIf="showImportModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px;">
-    <div class="modal-card" style="background: #1e293b; width: 100%; max-width: 650px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.15); padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h3 style="font-size: 1.4rem; font-weight: 700; margin: 0; color: #fff; display: flex; align-items: center; gap: 10px;">
-          <i class="fa-solid fa-file-import text-primary"></i> Importar Nuevos Cursos
-        </h3>
-        <button (click)="closeImportModal()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer;">&times;</button>
-      </div>
-
-      <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 15px;">
-        Pega a continuación la lista de cursos nuevos en formato JSON para registrarlos automáticamente en la base de datos MySQL de FreeSQLDatabase:
-      </p>
-
-      <textarea [(ngModel)]="importJsonText" rows="9" style="width: 100%; padding: 15px; font-family: monospace; font-size: 0.85rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: #0f172a; color: #38bdf8; margin-bottom: 20px; resize: vertical;"></textarea>
-
-      <div class="alert alert-danger" *ngIf="importErrorMsg" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 12px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 15px;">
-        ⚠️ {{ importErrorMsg }}
-      </div>
-
-      <div class="alert alert-success" *ngIf="importSuccessMsg" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; padding: 12px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 15px;">
-        ✅ {{ importSuccessMsg }}
-      </div>
-
-      <div style="display: flex; justify-content: flex-end; gap: 12px;">
-        <button (click)="closeImportModal()" class="btn btn-secondary" style="padding: 10px 20px; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; border: none; cursor: pointer;">
-          Cancelar
-        </button>
-        <button (click)="onProcessImport()" [disabled]="importing" class="btn btn-primary" style="padding: 10px 24px; border-radius: 8px; background: #6366f1; color: #fff; border: none; font-weight: 600; cursor: pointer;">
-          {{ importing ? 'Importando...' : '📥 Procesar e Importar Cursos' }}
-        </button>
-      </div>
-    </div>
-  </div>
 </div>

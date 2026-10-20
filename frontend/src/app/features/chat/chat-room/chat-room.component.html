@@ -1,36 +1,52 @@
 <div class="page-container">
   <div class="header-section">
-    <h1>Foro / Chat en Tiempo Real</h1>
+    <h1>💬 Foro / Chat en Tiempo Real</h1>
     <p class="subtitle">Comunícate en vivo con otros usuarios de la comunidad</p>
   </div>
 
   <div class="card chat-card">
-    <div class="messages-container">
+
+    <!-- Loading State -->
+    <div class="loading-state" *ngIf="loading">
+      <div class="spinner"></div>
+      <p>Cargando mensajes del foro...</p>
+    </div>
+
+    <div class="messages-container" *ngIf="!loading">
       <div
         *ngFor="let m of messages"
         class="message-bubble"
         [class.my-message]="m.senderUid === auth.currentUser?.id"
       >
         <div class="message-meta">
-          <strong class="sender">{{ m.senderName }}</strong>
+          <strong class="sender">{{ m.senderUid === auth.currentUser?.id ? 'Tú' : m.senderName }}</strong>
           <span class="time">{{ m.timestamp | date:'shortTime' }}</span>
         </div>
         <p class="text">{{ m.message }}</p>
       </div>
+
+      <div class="empty-chat" *ngIf="messages.length === 0">
+        <span>🗨️</span>
+        <p>Aún no hay mensajes. ¡Sé el primero en escribir!</p>
+      </div>
     </div>
 
-    <div class="chat-input-area" *ngIf="auth.currentUser">
+    <div class="chat-input-area" *ngIf="auth.currentUser && !loading">
       <input
         type="text"
         [(ngModel)]="newMessage"
         (keyup.enter)="onSend()"
         placeholder="Escribe tu consulta o respuesta aquí y presiona Enter..."
         class="chat-input"
+        [disabled]="sending"
       />
-      <button class="btn btn-primary" (click)="onSend()">Enviar Mensaje</button>
+      <button class="btn btn-primary send-btn" (click)="onSend()" [disabled]="sending || !newMessage.trim()">
+        <span *ngIf="!sending">✉️ Enviar</span>
+        <span *ngIf="sending">Enviando...</span>
+      </button>
     </div>
 
-    <div class="login-prompt-banner" *ngIf="!auth.currentUser">
+    <div class="login-prompt-banner" *ngIf="!auth.currentUser && !loading">
       <div class="prompt-text">
         <span>💬 <strong>Foro de la Comunidad en Modo Lectura:</strong></span>
         <p>Puedes leer todas las consultas de la comunidad. Para publicar tu pregunta o responder, por favor inicia sesión.</p>

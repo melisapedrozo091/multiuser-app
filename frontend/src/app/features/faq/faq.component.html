@@ -6,19 +6,29 @@
       Encuentra respuestas claras sobre nuestros cursos, pagos, certificados y modalidades de estudio.
     </p>
 
-    <div class="search-box card">
-      <span>🔍</span>
+    <div class="search-box">
+      <i class="fa-solid fa-magnifying-glass search-icon"></i>
       <input
         type="text"
         [(ngModel)]="searchText"
         placeholder="Buscar pregunta por palabras clave (ej: certificado, pagos, inscripción)..."
         class="search-input"
       />
+      <button
+        *ngIf="searchText"
+        class="clear-search-btn"
+        (click)="clearSearch()"
+        title="Borrar búsqueda"
+        type="button"
+      >
+        <i class="fa-solid fa-xmark"></i>
+      </button>
     </div>
   </div>
 
   <div class="faq-categories">
-    <div *ngFor="let cat of categories; let cIdx = index" class="category-block card">
+    <!-- RESULTADOS FILTRADOS -->
+    <div *ngFor="let cat of filteredCategories" class="category-block card">
       <div class="category-header">
         <span class="category-icon">{{ cat.icon }}</span>
         <h2>{{ cat.name }}</h2>
@@ -26,10 +36,10 @@
 
       <div class="questions-list">
         <div
-          *ngFor="let item of cat.items; let iIdx = index"
+          *ngFor="let item of cat.items"
           class="faq-card"
           [class.open]="item.open"
-          (click)="toggleItem(cIdx, iIdx)"
+          (click)="toggleItem(item)"
         >
           <div class="faq-q">
             <h3>{{ item.question }}</h3>
@@ -40,6 +50,16 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- ESTADO VACÍO SI NO HAY COINCIDENCIAS -->
+    <div *ngIf="filteredCategories.length === 0" class="empty-faq card">
+      <div class="empty-icon">🔎</div>
+      <h3>No encontramos resultados para "{{ searchText }}"</h3>
+      <p>Prueba buscando con otros términos (ej: <em>certificados, pagos, inscripción, cursos</em>).</p>
+      <button class="btn btn-secondary mt-3" (click)="clearSearch()">
+        <i class="fa-solid fa-rotate-left me-1"></i> Mostrar todas las preguntas
+      </button>
     </div>
   </div>
 

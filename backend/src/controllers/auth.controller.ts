@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import { firebaseAdmin, hasFirebaseKey } from '../services/firebase.service';
 import { JWT_SECRET, AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { prisma } from '../prisma/client';
-import { sendWelcomeEmail, sendPasswordResetEmail } from '../services/email.service';
+import { sendWelcomeEmail, sendPasswordResetEmail, sendArrepentimientoEmail } from '../services/email.service';
 
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -23,8 +24,26 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Credenciales inválidas o usuario no registrado' });
     }
 
-    // Verify stored password if set
-    if (dbUser.password && dbUser.password !== password) {
+    // Verify stored password using bcrypt (with legacy plaintext fallback & auto-migration)
+    let isPasswordValid = false;
+    if (dbUser.password) {
+      if (dbUser.password.startsWith('$2a$') || dbUser.password.startsWith('$2b$')) {
+        isPasswordValid = await bcrypt.compare(password, dbUser.password);
+      } else {
+        // Plaintext comparison fallback
+        isPasswordValid = (dbUser.password === password);
+        if (isPasswordValid) {
+          // Auto-migrate legacy password to bcrypt hash
+          const hashed = await bcrypt.hash(password, 10);
+          await prisma.user.update({
+            where: { id: dbUser.id },
+            data: { password: hashed }
+          });
+        }
+      }
+    }
+
+    if (!isPasswordValid) {
       return res.status(401).json({ error: 'Contraseña incorrecta' });
     }
 
@@ -47,6 +66,7 @@ export const register = async (req: Request, res: Response) => {
   const { email, password, displayName, role } = req.body;
   try {
     const assignedRole = role === 'ADMIN' ? 'ADMIN' : 'CLIENTE';
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     if (hasFirebaseKey) {
       const userRecord = await firebaseAdmin.auth().createUser({
@@ -61,7 +81,7 @@ export const register = async (req: Request, res: Response) => {
         data: {
           id: userRecord.uid,
           email,
-          password,
+          password: hashedPassword,
           displayName: displayName || email.split('@')[0],
           role: assignedRole
         }
@@ -87,7 +107,7 @@ export const register = async (req: Request, res: Response) => {
       data: {
         id: userId,
         email,
-        password,
+        password: hashedPassword,
         displayName: displayName || email.split('@')[0],
         role: assignedRole
       }
@@ -171,11 +191,13 @@ export const confirmResetPassword = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'El código de verificación ha expirado. Por favor solicita uno nuevo.' });
     }
 
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
     // Update password & clear reset code
     await prisma.user.update({
       where: { id: dbUser.id },
       data: {
-        password: newPassword,
+        password: hashedPassword,
         resetCode: null,
         resetCodeExpires: null
       }
@@ -217,13 +239,24 @@ export const changePassword = async (req: AuthenticatedRequest, res: Response) =
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    if (dbUser.password && currentPassword && dbUser.password !== currentPassword) {
+    let isMatch = false;
+    if (dbUser.password) {
+      if (dbUser.password.startsWith('$2a$') || dbUser.password.startsWith('$2b$')) {
+        isMatch = await bcrypt.compare(currentPassword, dbUser.password);
+      } else {
+        isMatch = (dbUser.password === currentPassword);
+      }
+    }
+
+    if (!isMatch) {
       return res.status(400).json({ error: 'La contraseña actual ingresada es incorrecta' });
     }
 
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
     await prisma.user.update({
       where: { id: user.uid },
-      data: { password: newPassword }
+      data: { password: hashedPassword }
     });
 
     return res.json({ message: '🛡️ Contraseña actualizada exitosamente.' });
@@ -231,3 +264,22 @@ export const changePassword = async (req: AuthenticatedRequest, res: Response) =
     return res.status(400).json({ error: 'Error al cambiar contraseña', details: error.message });
   }
 };
+
+export const processArrepentimiento = async (req: Request, res: Response) => {
+  const { fullName, email, trackingNumber, orderCode } = req.body;
+  if (!email || !fullName) {
+    return res.status(400).json({ error: 'Nombre y correo electrónico son requeridos' });
+  }
+
+  try {
+    const tracking = trackingNumber || 'REV-' + Math.floor(100000 + Math.random() * 900000);
+    sendArrepentimientoEmail(email, fullName, tracking, orderCode).catch(err => {
+      console.error('Error enviando email de arrepentimiento:', err);
+    });
+
+    return res.json({ success: true, trackingNumber: tracking, message: 'Solicitud de revocación procesada correctamente' });
+  } catch (error: any) {
+    return res.status(500).json({ error: 'Error al procesar solicitud de arrepentimiento', details: error.message });
+  }
+};
+

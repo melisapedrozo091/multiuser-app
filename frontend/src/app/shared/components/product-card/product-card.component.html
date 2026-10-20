@@ -6,14 +6,14 @@
   <div class="card-header">
     <div class="category-icon">{{ categoryIcon }}</div>
     <div class="title-container">
-      <h3 class="product-title">{{ product.name }}</h3>
+      <h3 class="product-title" [title]="product.name">{{ product.name }}</h3>
       <div class="rating-info">
         <i class="fa-solid fa-star text-warning me-1"></i> 4.9 (120+ alumnos)
       </div>
     </div>
   </div>
 
-  <p class="description">{{ product.description || 'Sin descripción disponible.' }}</p>
+  <p class="description" [title]="product.description || ''">{{ product.description || 'Sin descripción disponible.' }}</p>
 
   <div class="card-price-section">
     <span class="price-label">Inversión / Valor:</span>
@@ -21,16 +21,17 @@
   </div>
 
   <div class="card-footer">
-    <div class="stock-info">
-      <i class="fa-solid fa-users text-muted me-1"></i> Vacantes: <strong>{{ product.stock }}</strong>
+    <div class="footer-meta">
+      <span><i class="fa-solid fa-users text-muted me-1"></i> Vacantes: <strong>{{ product.stock }}</strong></span>
+      <span class="text-success" style="font-weight: 600; font-size: 0.78rem;"><i class="fa-solid fa-circle-check me-1"></i> Online Live</span>
     </div>
     <div class="actions">
       <button class="btn btn-secondary btn-detail" (click)="onViewDetail()">
         <i class="fa-solid fa-book-open me-1"></i> Temario
       </button>
       
-      <button *ngIf="auth.currentUser" class="btn btn-secondary btn-pdf" (click)="downloadSyllabusPdf()" title="Descargar Plan de Estudios Oficial">
-        <i class="fa-solid fa-file-arrow-down me-1"></i> PDF
+      <button class="btn btn-secondary btn-pdf" (click)="downloadSyllabusPdf()" title="Descargar Plan de Estudios Oficial (PDF)">
+        <i class="fa-solid fa-file-pdf me-1 text-danger"></i> PDF
       </button>
       
       <button class="btn btn-primary btn-enroll" (click)="onBuy()">
