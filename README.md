@@ -17,7 +17,7 @@ Aplicación web full-stack que desarrollé con una arquitectura robusta, utiliza
 cd backend
 npm install
 cp .env.example .env
-# Configura las credenciales de tu base de datos y variables de entorno en el archivo .env
+# Credenciales de la base de datos y variables de entorno en el archivo .env
 npx prisma generate
 npx prisma migrate dev --name init
 npm run dev
