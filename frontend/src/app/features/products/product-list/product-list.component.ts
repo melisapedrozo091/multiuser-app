@@ -11,6 +11,7 @@ import { FilterPipe } from '../../../core/pipes/filter.pipe';
 import { ProductCardComponent } from '../../../shared/components/product-card/product-card.component';
 
 import { CurrencyService, CurrencyMode } from '../../../core/services/currency.service';
+import { EnrollmentService } from '../../../core/services/enrollment.service';
 
 export interface CourseSyllabus {
   author: string;
@@ -144,6 +145,7 @@ export class ProductListComponent implements OnInit {
     public currencyService: CurrencyService,
     private csvExport: CsvExportService,
     private adminService: AdminService,
+    private enrollmentService: EnrollmentService,
     private router: Router
   ) {}
 
@@ -328,11 +330,22 @@ export class ProductListComponent implements OnInit {
   }
 
   confirmCheckout(): void {
+    if (!this.enrollingCourse || !this.auth.currentUser) return;
     this.purchaseCompleted = true;
+
+    // Guardar la inscripción en el almacenamiento persistente
+    this.enrollmentService.registerEnrollment(
+      this.enrollingCourse,
+      this.auth.currentUser,
+      'Tarjeta de Crédito / Débito',
+      this.currencyService.currentCurrency
+    );
+
     setTimeout(() => {
+      const courseName = this.enrollingCourse?.name;
       this.closeCheckoutModal();
-      alert(`🎉 ¡Inscripción confirmada! Te hemos enviado el correo de bienvenida para el curso "${this.enrollingCourse?.name}".`);
-    }, 1500);
+      alert(`🎉 ¡Inscripción confirmada y guardada con éxito! Ya puedes ver "${courseName}" en tu perfil académico.`);
+    }, 1200);
   }
 
   onEditProduct(product: Product): void {

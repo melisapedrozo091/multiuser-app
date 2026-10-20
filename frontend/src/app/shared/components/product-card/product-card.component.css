@@ -139,17 +139,17 @@
   height: 1.2rem;
 }
 
-.actions {
+.secondary-actions {
   display: flex;
-  align-items: center;
-  gap: 0.35rem;
+  gap: 0.5rem;
   width: 100%;
 }
 
 .btn-detail, .btn-pdf {
+  flex: 1;
   height: 36px;
-  padding: 0 0.55rem;
-  font-size: 0.78rem;
+  padding: 0 0.5rem;
+  font-size: 0.8rem;
   font-weight: 600;
   border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.15);
@@ -160,7 +160,6 @@
   align-items: center;
   justify-content: center;
   white-space: nowrap;
-  flex-shrink: 0;
   transition: all 0.2s ease;
 }
 
@@ -169,29 +168,30 @@
   border-color: rgba(255,255,255,0.3);
 }
 
-.btn-enroll {
-  flex: 1;
-  min-width: 0;
-  height: 36px;
+.btn-enroll-main {
+  width: 100%;
+  height: 40px;
   font-weight: 700;
-  font-size: 0.8rem;
-  padding: 0 0.6rem;
+  font-size: 0.88rem;
+  padding: 0 1rem;
   border-radius: 8px;
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   color: #ffffff;
   border: none;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
   transition: all 0.2s ease;
   cursor: pointer;
   white-space: nowrap;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
+  margin-top: 0.15rem;
 }
 
-.btn-enroll:hover {
+.btn-enroll-main:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5);
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
 }
 
 .admin-actions-bar {

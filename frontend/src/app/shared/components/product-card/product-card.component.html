@@ -25,7 +25,8 @@
       <span><i class="fa-solid fa-users text-muted me-1"></i> Vacantes: <strong>{{ product.stock }}</strong></span>
       <span class="text-success" style="font-weight: 600; font-size: 0.78rem;"><i class="fa-solid fa-circle-check me-1"></i> Online Live</span>
     </div>
-    <div class="actions">
+    <!-- Fila 1: Temario y Plan de Estudios PDF -->
+    <div class="secondary-actions">
       <button class="btn btn-secondary btn-detail" (click)="onViewDetail()">
         <i class="fa-solid fa-book-open me-1"></i> Temario
       </button>
@@ -33,13 +34,14 @@
       <button class="btn btn-secondary btn-pdf" (click)="downloadSyllabusPdf()" title="Descargar Plan de Estudios Oficial (PDF)">
         <i class="fa-solid fa-file-pdf me-1 text-danger"></i> PDF
       </button>
-      
-      <button class="btn btn-primary btn-enroll" (click)="onBuy()">
-        <i class="fa-solid fa-graduation-cap me-1"></i> Inscribirse
-      </button>
     </div>
 
-    <!-- Barra de acciones de administración separada para no comprimir los botones -->
+    <!-- Fila 2: Botón Principal INSCRIBIRSE (100% de ancho, nunca se corta) -->
+    <button class="btn btn-primary btn-enroll-main" (click)="onBuy()">
+      <i class="fa-solid fa-graduation-cap me-1"></i> Inscribirme al Curso
+    </button>
+
+    <!-- Fila 3: Acciones de administración separadas -->
     <div class="admin-actions-bar" *ngIf="isAdmin">
       <button class="btn btn-secondary btn-admin-edit" (click)="onEdit()" title="Editar información del curso">
         <i class="fa-solid fa-pen-to-square me-1"></i> Editar

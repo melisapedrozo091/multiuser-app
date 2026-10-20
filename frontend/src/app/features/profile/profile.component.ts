@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { PdfExportService } from '../../core/services/pdf-export.service';
+import { EnrollmentService } from '../../core/services/enrollment.service';
 
 export interface UserCourse {
   id: number;
@@ -108,11 +109,37 @@ export class ProfileComponent implements OnInit {
 
   constructor(
     public auth: AuthService,
-    private pdfExport: PdfExportService
+    private pdfExport: PdfExportService,
+    private enrollmentService: EnrollmentService
   ) {}
 
   ngOnInit(): void {
     this.loadPaymentMethods();
+    this.loadUserCourses();
+  }
+
+  loadUserCourses(): void {
+    const user = this.auth.currentUser;
+    if (!user || !user.email) return;
+
+    const enrollments = this.enrollmentService.getUserEnrollments(user.email);
+    if (enrollments && enrollments.length > 0) {
+      this.userCourses = enrollments.map(e => ({
+        id: e.courseId,
+        name: e.courseName,
+        category: 'Formación Tech',
+        icon: '💻',
+        status: e.status === 'ANULADO' ? 'INSCRIPTO' : e.status,
+        progress: e.status === 'FINALIZADO' ? 100 : (e.status === 'EN_CURSO' ? 50 : 0),
+        lastAccess: e.status === 'FINALIZADO' 
+          ? 'Curso finalizado con éxito' 
+          : (e.status === 'EN_CURSO' ? 'Módulo 2 en desarrollo' : 'Inscripción confirmada - Clases habilitadas'),
+        certificateId: e.status === 'FINALIZADO' ? `CERT-${e.courseId}-2026` : undefined
+      }));
+    } else {
+      // Si el usuario es nuevo y no tiene inscripciones
+      this.userCourses = [];
+    }
   }
 
   loadPaymentMethods(): void {
@@ -128,13 +155,15 @@ export class ProfileComponent implements OnInit {
       }
     }
 
-    // Titular por defecto personalizado al usuario en sesión
-    const defaultHolder = user?.displayName || 'Jeon Jungkook';
-    this.paymentMethods = [
-      { id: '1', type: 'VISA', last4: '4821', holder: defaultHolder, isDefault: true },
-      { id: '2', type: 'MERCADOPAGO', last4: 'MP-PAY', holder: user?.email || 'pago@mercadopago.com', isDefault: false },
-      { id: '3', type: 'MASTERCARD', last4: '8812', holder: defaultHolder, isDefault: false }
-    ];
+    // EL ADMIN NUNCA DEBE TENER TARJETAS CARGADAS POR DEFECTO
+    // Se deja vacío [] para que él mismo ingrese sus datos luego
+    if (user?.role === 'ADMIN') {
+      this.paymentMethods = [];
+      return;
+    }
+
+    // Para clientes sin tarjetas previas
+    this.paymentMethods = [];
   }
 
   savePaymentMethodsToStorage(): void {
