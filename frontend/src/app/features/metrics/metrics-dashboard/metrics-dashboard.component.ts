@@ -208,6 +208,50 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy {
     }, 200);
   }
 
+  showDeleted = false;
+  adminActionMessage: string | null = null;
+  adminErrorMessage: string | null = null;
+
+  get displayedEnrollments(): Enrollment[] {
+    return this.enrollmentService.getAllEnrollments(this.showDeleted);
+  }
+
+  pauseSubscription(item: Enrollment): void {
+    const res = this.enrollmentService.pauseEnrollment(item.id);
+    if (res.success) {
+      this.adminActionMessage = res.message;
+      this.adminErrorMessage = null;
+      this.calculateRealTimeMetrics();
+      this.renderCharts();
+    } else {
+      this.adminErrorMessage = res.message;
+      this.adminActionMessage = null;
+    }
+  }
+
+  resumeSubscription(item: Enrollment): void {
+    const res = this.enrollmentService.resumeEnrollment(item.id);
+    if (res.success) {
+      this.adminActionMessage = res.message;
+      this.adminErrorMessage = null;
+      this.calculateRealTimeMetrics();
+      this.renderCharts();
+    } else {
+      this.adminErrorMessage = res.message;
+      this.adminActionMessage = null;
+    }
+  }
+
+  deleteSubscription(item: Enrollment): void {
+    if (confirm(`¿Deseas remover la suscripción ${item.id} de la vista visible? (En la base de datos se conservará íntegra para auditoría).`)) {
+      const res = this.enrollmentService.softDeleteEnrollment(item.id);
+      this.adminActionMessage = res.message;
+      this.adminErrorMessage = null;
+      this.calculateRealTimeMetrics();
+      this.renderCharts();
+    }
+  }
+
   exportReportCsv(): void {
     if (this.metrics) {
       this.csvExport.exportMetricsToCsv(this.metrics);

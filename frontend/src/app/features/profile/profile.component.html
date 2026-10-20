@@ -43,22 +43,28 @@
         </h3>
         
         <!-- Status Filter Pills -->
-        <div class="filter-pills" style="display: flex; gap: 8px;">
+        <div class="filter-pills" style="display: flex; gap: 8px; flex-wrap: wrap;">
           <button [class.active-pill]="courseFilter === 'TODOS'" (click)="setCourseFilter('TODOS')" class="pill-btn">Todos</button>
           <button [class.active-pill]="courseFilter === 'INSCRIPTO'" (click)="setCourseFilter('INSCRIPTO')" class="pill-btn">Inscriptos</button>
           <button [class.active-pill]="courseFilter === 'EN_CURSO'" (click)="setCourseFilter('EN_CURSO')" class="pill-btn">En Curso</button>
+          <button [class.active-pill]="courseFilter === 'PAUSADO'" (click)="setCourseFilter('PAUSADO')" class="pill-btn">Pausados</button>
           <button [class.active-pill]="courseFilter === 'FINALIZADOS'" (click)="setCourseFilter('FINALIZADOS')" class="pill-btn">Finalizados</button>
         </div>
       </div>
 
       <div class="courses-list" style="display: flex; flex-direction: column; gap: 15px;">
-        <div *ngFor="let course of filteredCourses" class="course-item-card" style="background: var(--bg-hover, rgba(255,255,255,0.03)); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
-          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 15px;">
+        <div *ngFor="let course of filteredCourses" class="course-item-card" style="background: var(--bg-hover, rgba(255,255,255,0.03)); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; flex-wrap: wrap;">
             <div style="display: flex; gap: 12px; align-items: center;">
               <span style="font-size: 1.8rem;">{{ course.icon }}</span>
               <div>
                 <h4 style="font-size: 1.05rem; font-weight: 600; margin: 0; color: var(--text-color, #fff);">{{ course.name }}</h4>
-                <span style="font-size: 0.8rem; color: #94a3b8;">Categoría: {{ course.category }}</span>
+                <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px; font-size: 0.8rem; color: #94a3b8;">
+                  <span>Categoría: {{ course.category }}</span>
+                  <span *ngIf="course.rating" style="color: #fbbf24; font-weight: 600;">
+                    <i class="fa-solid fa-star"></i> {{ course.rating }}/5 estrellas
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -66,43 +72,85 @@
             <div>
               <span *ngIf="course.status === 'INSCRIPTO'" class="status-badge status-enrolled"><i class="fa-solid fa-clipboard-check me-1"></i> Inscripto</span>
               <span *ngIf="course.status === 'EN_CURSO'" class="status-badge status-progress"><i class="fa-solid fa-spinner fa-spin me-1"></i> En Curso</span>
+              <span *ngIf="course.status === 'PAUSADO'" class="status-badge" style="background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); padding: 4px 10px; border-radius: 20px; font-weight: 600; font-size: 0.78rem;"><i class="fa-solid fa-pause me-1"></i> Pausado</span>
               <span *ngIf="course.status === 'FINALIZADO'" class="status-badge status-completed"><i class="fa-solid fa-circle-check me-1"></i> Finalizado</span>
+              <span *ngIf="course.status === 'ANULADO'" class="status-badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 10px; border-radius: 20px; font-weight: 600; font-size: 0.78rem;"><i class="fa-solid fa-xmark me-1"></i> Reembolsado</span>
             </div>
           </div>
 
           <!-- Progress bar -->
-          <div style="margin-top: 5px;">
+          <div>
             <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">
               <span>Progreso de Clases</span>
               <span><strong>{{ course.progress }}%</strong></span>
             </div>
             <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden;">
-              <div [style.width.%]="course.progress" [style.background]="course.status === 'FINALIZADO' ? '#10b981' : (course.status === 'INSCRIPTO' ? '#f59e0b' : '#6366f1')" style="height: 100%; transition: width 0.4s ease;"></div>
+              <div [style.width.%]="course.progress" [style.background]="course.status === 'FINALIZADO' ? '#10b981' : (course.status === 'INSCRIPTO' ? '#f59e0b' : (course.status === 'PAUSADO' ? '#f97316' : '#6366f1'))" style="height: 100%; transition: width 0.4s ease;"></div>
             </div>
           </div>
 
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; font-size: 0.82rem; color: #94a3b8;">
-            <span><i class="fa-solid fa-circle-info me-1 text-primary"></i> {{ course.lastAccess }}</span>
-            
-            <!-- Acciones según estado: únicamente descarga si está FINALIZADO -->
-            <button *ngIf="course.status === 'FINALIZADO'" (click)="downloadCertificatePdf(course)" class="btn btn-sm btn-success" style="padding: 6px 16px; border-radius: 8px; font-size: 0.82rem; background: #10b981; color: #fff; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 600; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);">
-              <i class="fa-solid fa-file-pdf"></i> Descargar Certificado
-            </button>
+          <!-- Barra de Acciones del Alumno (Pausar, Reanudar, Calificar, Cancelar/Reembolso) -->
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 12px; font-size: 0.82rem; color: #94a3b8; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <span><i class="fa-solid fa-circle-info me-1 text-primary"></i> {{ course.lastAccess }}</span>
+              <!-- Información de plazos -->
+              <span *ngIf="course.status === 'PAUSADO'" style="display: block; font-size: 0.75rem; color: #fb923c; margin-top: 2px;">
+                <i class="fa-solid fa-clock me-1"></i> {{ course.resumeMessage }}
+              </span>
+              <span *ngIf="course.status !== 'ANULADO' && course.status !== 'FINALIZADO' && course.canRefund" style="display: block; font-size: 0.75rem; color: #34d399; margin-top: 2px;">
+                <i class="fa-solid fa-shield-halved me-1"></i> Derecho de arrepentimiento: {{ course.refundRemainingDays }} días restantes
+              </span>
+            </div>
 
-            <!-- En curso: solo texto informativo de estado sin acción -->
-            <span *ngIf="course.status === 'EN_CURSO'" style="color: #818cf8; font-weight: 600; font-size: 0.82rem; background: rgba(99, 102, 241, 0.12); padding: 5px 12px; border-radius: 6px; border: 1px solid rgba(99, 102, 241, 0.25);">
-              <i class="fa-solid fa-graduation-cap me-1"></i> Estado: En curso
-            </span>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <!-- Botón Calificar Curso -->
+              <button *ngIf="course.status !== 'ANULADO'" (click)="openRatingModal(course)" 
+                      class="btn btn-sm" 
+                      style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; padding: 6px 12px; font-size: 0.78rem; cursor: pointer;">
+                <i class="fa-solid fa-star me-1"></i> {{ course.rating ? 'Editar Calificación' : 'Calificar Curso' }}
+              </button>
 
-            <!-- Inscripto: solo texto informativo de estado sin acción -->
-            <span *ngIf="course.status === 'INSCRIPTO'" style="color: #fbbf24; font-weight: 600; font-size: 0.82rem; background: rgba(245, 158, 11, 0.12); padding: 5px 12px; border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.25);">
-              <i class="fa-solid fa-clock-rotate-left me-1"></i> Estado: Inscripto
-            </span>
+              <!-- Pausar Curso (si está activo) -->
+              <button *ngIf="course.status === 'INSCRIPTO' || course.status === 'EN_CURSO'" 
+                      (click)="pauseCourse(course)" 
+                      class="btn btn-sm" 
+                      style="background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); border-radius: 6px; padding: 6px 12px; font-size: 0.78rem; cursor: pointer;">
+                <i class="fa-solid fa-pause me-1"></i> Pausar Curso
+              </button>
+
+              <!-- Reanudar Curso (si está pausado, verificando < 3 meses) -->
+              <button *ngIf="course.status === 'PAUSADO' && course.canResume" 
+                      (click)="resumeCourse(course)" 
+                      class="btn btn-sm" 
+                      style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 6px 12px; font-size: 0.78rem; cursor: pointer;">
+                <i class="fa-solid fa-play me-1"></i> Reanudar Curso
+              </button>
+
+              <span *ngIf="course.status === 'PAUSADO' && !course.canResume" 
+                    style="color: #f87171; font-size: 0.75rem; background: rgba(239, 68, 68, 0.1); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.25);">
+                Plazo de 3 meses para reanudar expirado
+              </span>
+
+              <!-- Cancelar & Reembolso (Botón de Arrepentimiento, válido hasta 3 meses) -->
+              <button *ngIf="course.status !== 'ANULADO' && course.status !== 'FINALIZADO' && course.canRefund" 
+                      (click)="openRefundModal(course)" 
+                      class="btn btn-sm" 
+                      style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 6px 12px; font-size: 0.78rem; cursor: pointer;">
+                <i class="fa-solid fa-rotate-left me-1"></i> Cancelar / Arrepentimiento
+              </button>
+
+              <!-- Descargar Certificado si está finalizado -->
+              <button *ngIf="course.status === 'FINALIZADO'" (click)="downloadCertificatePdf(course)" 
+                      class="btn btn-sm btn-success" 
+                      style="padding: 6px 14px; border-radius: 6px; font-size: 0.78rem; background: #10b981; color: #fff; border: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 600;">
+                <i class="fa-solid fa-file-pdf"></i> Certificado PDF
+              </button>
+            </div>
           </div>
         </div>
 
         <div *ngIf="filteredCourses.length === 0" style="text-align: center; padding: 30px; color: #94a3b8;">
-          No se encontraron cursos registrados bajo este estado.
+          No se encontraron cursos registrados bajo este filtro.
         </div>
       </div>
     </div>
@@ -291,6 +339,100 @@
           {{ loading ? 'Guardando...' : '🔒 Actualizar Contraseña' }}
         </button>
       </form>
+    </div>
+    <!-- MODAL: BOTÓN DE ARREPENTIMIENTO & REEMBOLSO (HASTA 3 MESES) -->
+    <div class="modal-backdrop" *ngIf="showRefundModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+      <div class="modal-card" style="background: #1e293b; width: 100%; max-width: 520px; border-radius: 16px; border: 1px solid rgba(239, 68, 68, 0.3); padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; color: #f87171; display: flex; align-items: center; gap: 10px;">
+            <i class="fa-solid fa-rotate-left"></i> Botón de Arrepentimiento & Reembolso
+          </h3>
+          <button (click)="closeRefundModal()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer;">&times;</button>
+        </div>
+
+        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 10px; padding: 14px; margin-bottom: 18px; font-size: 0.86rem; color: #fca5a5; line-height: 1.5;">
+          <strong><i class="fa-solid fa-shield-halved me-1"></i> Derecho de Arrepentimiento (Ley 24.240):</strong>
+          <br>
+          Puedes solicitar la cancelación total del curso y la restitución del 100% de lo abonado dentro de los 3 meses (90 días) posteriores a tu solicitud.
+          <div style="margin-top: 6px; font-weight: 700; color: #fff;">
+            Curso: {{ refundModalCourse?.name }}
+          </div>
+          <div style="font-size: 0.8rem; color: #34d399; margin-top: 4px;">
+            Plazo restante: {{ refundModalCourse?.refundRemainingDays }} días
+          </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 6px; font-weight: 600;">
+            Motivo de la cancelación / solicitud de reembolso:
+          </label>
+          <select [(ngModel)]="refundReason" style="width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: #0f172a; color: #fff; margin-bottom: 10px;">
+            <option value="Incompatibilidad de horarios o cambio de planes">Incompatibilidad de horarios o cambio de planes</option>
+            <option value="El temario no coincidió con mis expectativas laborales">El temario no coincidió con mis expectativas laborales</option>
+            <option value="Motivos personales / de salud">Motivos personales / de salud</option>
+            <option value="Otro motivo justificado">Otro motivo justificado</option>
+          </select>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button (click)="closeRefundModal()" style="padding: 10px 18px; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; border: none; cursor: pointer;">
+            Volver atrás
+          </button>
+          <button (click)="confirmRefund()" style="padding: 10px 20px; border-radius: 8px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #fff; border: none; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-check"></i> Confirmar Cancelación y Reembolso
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: CALIFICAR CURSO (1 A 5 ESTRELLAS) -->
+    <div class="modal-backdrop" *ngIf="showRatingModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+      <div class="modal-card" style="background: #1e293b; width: 100%; max-width: 480px; border-radius: 16px; border: 1px solid rgba(245, 158, 11, 0.3); padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); text-align: center;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h3 style="font-size: 1.25rem; font-weight: 700; margin: 0; color: #fff; display: flex; align-items: center; gap: 10px;">
+            <i class="fa-solid fa-star text-warning"></i> Calificar Curso
+          </h3>
+          <button (click)="closeRatingModal()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.4rem; cursor: pointer;">&times;</button>
+        </div>
+
+        <h4 style="font-size: 1rem; color: #818cf8; margin: 0 0 15px 0;">{{ ratingModalCourse?.name }}</h4>
+
+        <p style="font-size: 0.88rem; color: #94a3b8; margin-bottom: 15px;">
+          ¿Cómo calificarías tu experiencia y contenido de este programa?
+        </p>
+
+        <!-- Selector interactivo de estrellas -->
+        <div style="display: flex; justify-content: center; gap: 12px; font-size: 2.2rem; margin-bottom: 20px;">
+          <span *ngFor="let s of [1, 2, 3, 4, 5]" 
+                (click)="selectedRating = s" 
+                [style.color]="s <= selectedRating ? '#fbbf24' : '#475569'"
+                style="cursor: pointer; transition: transform 0.2s;"
+                onmouseover="this.style.transform='scale(1.2)'"
+                onmouseout="this.style.transform='scale(1)'">
+            ★
+          </span>
+        </div>
+        <div style="font-weight: 700; color: #fbbf24; font-size: 1rem; margin-bottom: 15px;">
+          {{ selectedRating }} de 5 Estrellas
+        </div>
+
+        <div style="margin-bottom: 20px; text-align: left;">
+          <label style="display: block; font-size: 0.82rem; color: #cbd5e1; margin-bottom: 6px;">
+            Comentario o Reseña (Opcional):
+          </label>
+          <textarea [(ngModel)]="ratingComment" rows="3" placeholder="Cuéntanos qué te pareció el curso, el mentor y los ejercicios..." 
+                    style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: #0f172a; color: #fff; font-size: 0.88rem;"></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button (click)="closeRatingModal()" style="padding: 10px 18px; border-radius: 8px; background: rgba(255,255,255,0.1); color: #fff; border: none; cursor: pointer;">
+            Cancelar
+          </button>
+          <button (click)="confirmRating()" style="padding: 10px 22px; border-radius: 8px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #fff; border: none; font-weight: 700; cursor: pointer;">
+            💾 Guardar Calificación
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 

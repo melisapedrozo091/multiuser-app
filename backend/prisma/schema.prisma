@@ -39,3 +39,25 @@ model ChatMessage {
   message    String   @db.Text
   timestamp  DateTime @default(now())
 }
+
+model Enrollment {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  userId        String
+  userEmail     String
+  userName      String
+  courseId      Int
+  courseName    String
+  price         Float
+  currency      String    @default("USD")
+  date          String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  pausedAt      DateTime?
+  status        String    @default("INSCRIPTO")
+  paymentMethod String
+  refundReason  String?
+  rating        Int?
+  reviewComment String?   @db.Text
+  deletedFromUi Boolean   @default(false)
+}

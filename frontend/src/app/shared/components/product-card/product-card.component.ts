@@ -6,6 +6,8 @@ import { HighlightDirective } from '../../../core/directives/highlight.directive
 import { AuthService } from '../../../core/services/auth.service';
 import { CurrencyService } from '../../../core/services/currency.service';
 import { PdfExportService } from '../../../core/services/pdf-export.service';
+import { EnrollmentService } from '../../../core/services/enrollment.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-product-card',
@@ -26,8 +28,20 @@ export class ProductCardComponent {
   constructor(
     public currencyService: CurrencyService,
     public auth: AuthService,
-    private pdfExport: PdfExportService
+    private pdfExport: PdfExportService,
+    private enrollmentService: EnrollmentService,
+    private router: Router
   ) {}
+
+  get isAlreadyEnrolled(): boolean {
+    const userEmail = this.auth.currentUser?.email;
+    if (!userEmail) return false;
+    return this.enrollmentService.isUserEnrolled(userEmail, this.product.id);
+  }
+
+  goToMyCourse(): void {
+    this.router.navigate(['/profile'], { queryParams: { tab: 'cursos' } });
+  }
 
   downloadSyllabusPdf(): void {
     const user = this.auth.currentUser;

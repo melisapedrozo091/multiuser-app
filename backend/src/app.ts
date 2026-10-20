@@ -5,6 +5,7 @@ import authRoutes from './routes/auth.routes';
 import productRoutes from './routes/product.routes';
 import adminRoutes from './routes/admin.routes';
 import chatRoutes from './routes/chat.routes';
+import enrollmentRoutes from './routes/enrollment.routes';
 import { firebaseAuthMiddleware } from './middlewares/auth.middleware';
 
 const app = express();
@@ -61,6 +62,7 @@ app.get('/', (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/enrollments', enrollmentRoutes);
 
 // Rutas 100% administrativas protegidas
 app.use('/api/admin', firebaseAuthMiddleware, adminRoutes);

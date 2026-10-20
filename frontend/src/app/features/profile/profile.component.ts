@@ -8,13 +8,24 @@ import { EnrollmentService, Enrollment } from '../../core/services/enrollment.se
 
 export interface UserCourse {
   id: number;
+  enrollmentId: string;
   name: string;
   category: string;
   icon: string;
-  status: 'INSCRIPTO' | 'EN_CURSO' | 'FINALIZADO';
+  status: 'INSCRIPTO' | 'EN_CURSO' | 'FINALIZADO' | 'PAUSADO' | 'ANULADO';
   progress: number;
   lastAccess: string;
   certificateId?: string;
+  pausedAt?: string | null;
+  createdAt?: string;
+  rating?: number;
+  reviewComment?: string;
+  canResume: boolean;
+  resumeRemainingDays: number;
+  resumeMessage: string;
+  canRefund: boolean;
+  refundRemainingDays: number;
+  refundMessage: string;
 }
 
 export interface PaymentMethod {
@@ -34,7 +45,7 @@ export interface PaymentMethod {
 })
 export class ProfileComponent implements OnInit {
   activeTab: 'cursos' | 'certificados' | 'pagos' | 'seguridad' = 'cursos';
-  courseFilter: 'TODOS' | 'INSCRIPTO' | 'EN_CURSO' | 'FINALIZADOS' = 'TODOS';
+  courseFilter: 'TODOS' | 'INSCRIPTO' | 'EN_CURSO' | 'PAUSADO' | 'FINALIZADOS' = 'TODOS';
 
   // Password change form
   currentPassword = '';
@@ -46,6 +57,16 @@ export class ProfileComponent implements OnInit {
 
   // Mock User Courses Data (Informativo de Cursos al Día)
   userCourses: UserCourse[] = [];
+
+  // Modals de Reembolso & Calificación
+  showRefundModal = false;
+  refundModalCourse: UserCourse | null = null;
+  refundReason = 'Incompatibilidad de horarios o contenido';
+
+  showRatingModal = false;
+  ratingModalCourse: UserCourse | null = null;
+  selectedRating = 5;
+  ratingComment = '';
 
   // Payment Methods
   paymentMethods: PaymentMethod[] = [];
@@ -93,7 +114,7 @@ export class ProfileComponent implements OnInit {
         date: e.date,
         concept: `Inscripción: ${e.courseName}`,
         amount: `$ ${e.price.toFixed(2)} ${e.currency || 'USD'}`,
-        status: 'Pagado'
+        status: e.status === 'ANULADO' ? 'Reembolsado' : 'Pagado'
       }));
     } else {
       this.invoices = [];
@@ -106,21 +127,112 @@ export class ProfileComponent implements OnInit {
 
     const enrollments = this.enrollmentService.getUserEnrollments(user.email);
     if (enrollments && enrollments.length > 0) {
-      this.userCourses = enrollments.map((e: Enrollment) => ({
-        id: e.courseId,
-        name: e.courseName,
-        category: 'Formación Tech',
-        icon: '💻',
-        status: e.status === 'ANULADO' ? 'INSCRIPTO' : e.status,
-        progress: e.status === 'FINALIZADO' ? 100 : (e.status === 'EN_CURSO' ? 50 : 0),
-        lastAccess: e.status === 'FINALIZADO' 
-          ? 'Curso finalizado con éxito' 
-          : (e.status === 'EN_CURSO' ? 'Módulo 2 en desarrollo' : 'Inscripción confirmada - Clases habilitadas'),
-        certificateId: e.status === 'FINALIZADO' ? `CERT-${e.courseId}-2026` : undefined
-      }));
+      this.userCourses = enrollments.map((e: Enrollment) => {
+        const resumeInfo = this.enrollmentService.canResume(e);
+        const refundInfo = this.enrollmentService.canCancelAndRefund(e);
+
+        return {
+          id: e.courseId,
+          enrollmentId: e.id,
+          name: e.courseName,
+          category: 'Formación Tech',
+          icon: '💻',
+          status: (e.status === 'ELIMINADO' ? 'ANULADO' : e.status) as any,
+          progress: e.status === 'FINALIZADO' ? 100 : (e.status === 'EN_CURSO' ? 50 : (e.status === 'PAUSADO' ? 25 : 0)),
+          lastAccess: e.status === 'FINALIZADO' 
+            ? 'Curso finalizado con éxito' 
+            : (e.status === 'EN_CURSO' ? 'Módulo 2 en desarrollo' : (e.status === 'PAUSADO' ? 'Curso en pausa' : 'Inscripción confirmada - Clases habilitadas')),
+          certificateId: e.status === 'FINALIZADO' ? `CERT-${e.courseId}-2026` : undefined,
+          pausedAt: e.pausedAt,
+          createdAt: e.createdAt,
+          rating: e.rating,
+          reviewComment: e.reviewComment,
+          canResume: resumeInfo.allowed,
+          resumeRemainingDays: resumeInfo.remainingDays,
+          resumeMessage: resumeInfo.message,
+          canRefund: refundInfo.allowed,
+          refundRemainingDays: refundInfo.remainingDays,
+          refundMessage: refundInfo.message
+        };
+      });
     } else {
-      // Si el usuario es nuevo y no tiene inscripciones
       this.userCourses = [];
+    }
+  }
+
+  // --- ACCIONES DE CURSOS PARA CLIENTE ---
+  pauseCourse(course: UserCourse): void {
+    const res = this.enrollmentService.pauseEnrollment(course.enrollmentId);
+    if (res.success) {
+      this.successMessage = res.message;
+      this.errorMessage = null;
+      this.loadUserCourses();
+    } else {
+      this.errorMessage = res.message;
+      this.successMessage = null;
+    }
+  }
+
+  resumeCourse(course: UserCourse): void {
+    const res = this.enrollmentService.resumeEnrollment(course.enrollmentId);
+    if (res.success) {
+      this.successMessage = res.message;
+      this.errorMessage = null;
+      this.loadUserCourses();
+    } else {
+      this.errorMessage = res.message;
+      this.successMessage = null;
+    }
+  }
+
+  // Botón de Arrepentimiento / Cancelación
+  openRefundModal(course: UserCourse): void {
+    this.refundModalCourse = course;
+    this.refundReason = 'Incompatibilidad de horarios o cambio de planes';
+    this.showRefundModal = true;
+    this.errorMessage = null;
+    this.successMessage = null;
+  }
+
+  closeRefundModal(): void {
+    this.showRefundModal = false;
+    this.refundModalCourse = null;
+  }
+
+  confirmRefund(): void {
+    if (!this.refundModalCourse) return;
+    const res = this.enrollmentService.cancelAndRefund(this.refundModalCourse.enrollmentId, this.refundReason);
+    if (res.success) {
+      this.successMessage = res.message;
+      this.errorMessage = null;
+      this.closeRefundModal();
+      this.loadUserCourses();
+      this.loadInvoices();
+    } else {
+      this.errorMessage = res.message;
+    }
+  }
+
+  // Calificar Curso
+  openRatingModal(course: UserCourse): void {
+    this.ratingModalCourse = course;
+    this.selectedRating = course.rating || 5;
+    this.ratingComment = course.reviewComment || '';
+    this.showRatingModal = true;
+  }
+
+  closeRatingModal(): void {
+    this.showRatingModal = false;
+    this.ratingModalCourse = null;
+  }
+
+  confirmRating(): void {
+    if (!this.ratingModalCourse) return;
+    const res = this.enrollmentService.rateCourse(this.ratingModalCourse.enrollmentId, this.selectedRating, this.ratingComment);
+    if (res.success) {
+      this.successMessage = res.message;
+      this.closeRatingModal();
+      this.loadUserCourses();
     }
   }
 
@@ -159,13 +271,14 @@ export class ProfileComponent implements OnInit {
     this.successMessage = null;
   }
 
-  setCourseFilter(filter: 'TODOS' | 'INSCRIPTO' | 'EN_CURSO' | 'FINALIZADOS'): void {
+  setCourseFilter(filter: 'TODOS' | 'INSCRIPTO' | 'EN_CURSO' | 'PAUSADO' | 'FINALIZADOS'): void {
     this.courseFilter = filter;
   }
 
   get filteredCourses(): UserCourse[] {
     if (this.courseFilter === 'INSCRIPTO') return this.userCourses.filter(c => c.status === 'INSCRIPTO');
     if (this.courseFilter === 'EN_CURSO') return this.userCourses.filter(c => c.status === 'EN_CURSO');
+    if (this.courseFilter === 'PAUSADO') return this.userCourses.filter(c => c.status === 'PAUSADO');
     if (this.courseFilter === 'FINALIZADOS') return this.userCourses.filter(c => c.status === 'FINALIZADO');
     return this.userCourses;
   }

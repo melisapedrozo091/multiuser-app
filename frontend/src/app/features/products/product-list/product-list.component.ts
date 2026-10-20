@@ -338,6 +338,12 @@ export class ProductListComponent implements OnInit {
       return;
     }
 
+    // Regla: Una sola inscripción por curso por usuario
+    if (this.enrollmentService.isUserEnrolled(this.auth.currentUser.email, product.id)) {
+      this.router.navigate(['/profile'], { queryParams: { tab: 'cursos' } });
+      return;
+    }
+
     this.showCheckoutModal = true;
     this.checkoutProcessing = false;
     this.checkoutSuccess = false;

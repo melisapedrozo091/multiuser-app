@@ -36,9 +36,13 @@
       </button>
     </div>
 
-    <!-- Fila 2: Botón Principal INSCRIBIRSE (100% de ancho, nunca se corta) -->
-    <button class="btn btn-primary btn-enroll-main" (click)="onBuy()">
+    <!-- Fila 2: Botón Principal INSCRIBIRSE (o Ya Inscripto si ya está registrado) -->
+    <button *ngIf="!isAlreadyEnrolled" class="btn btn-primary btn-enroll-main" (click)="onBuy()">
       <i class="fa-solid fa-graduation-cap me-1"></i> Inscribirme al Curso
+    </button>
+    <button *ngIf="isAlreadyEnrolled" class="btn btn-enroll-main" (click)="goToMyCourse()" 
+            style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1.5px solid rgba(16, 185, 129, 0.4); font-weight: 700;">
+      <i class="fa-solid fa-circle-check me-1"></i> Ya estás inscripto (Ver Curso)
     </button>
 
     <!-- Fila 3: Acciones de administración separadas -->
