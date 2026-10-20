@@ -422,11 +422,11 @@ export class PdfExportService {
     const teacher = this.getTeacherForCourse(product.name);
     doc.setFillColor(238, 242, 255); // Indigo light background
     doc.setDrawColor(199, 210, 254);
-    doc.rect(14, currentY, 182, 25, 'F');
-    doc.rect(14, currentY, 182, 25, 'S');
+    doc.rect(14, currentY, 182, 30, 'F');
+    doc.rect(14, currentY, 182, 30, 'S');
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.setFontSize(9.5);
     doc.setTextColor(67, 56, 202);
     doc.text('PROFESOR A CARGO & MENTOR ACADÉMICO:', 18, currentY + 6.5);
 
@@ -441,14 +441,15 @@ export class PdfExportService {
     doc.text('Email para consultas académicas: ', 18, currentY + 19);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(79, 70, 229);
-    doc.text(teacher.email, 70, currentY + 19);
+    doc.text(teacher.email, 72, currentY + 19);
 
+    // Tutoría activa en renglón propio para evitar cualquier superposición
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100, 116, 139);
-    doc.setFontSize(7.8);
-    doc.text('(Tutoría activa: respuestas a dudas técnicas y consultas en < 24 hs)', 130, currentY + 19);
+    doc.setFontSize(8);
+    doc.text('• Tutoría activa garantizada: respuestas a dudas técnicas y consultas en < 24 hs', 18, currentY + 25);
 
-    currentY += 31;
+    currentY += 36;
 
     // Syllabus Modules Header
     doc.setFont('helvetica', 'bold');

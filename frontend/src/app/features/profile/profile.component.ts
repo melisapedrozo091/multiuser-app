@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { PdfExportService } from '../../core/services/pdf-export.service';
 import { EnrollmentService, Enrollment } from '../../core/services/enrollment.service';
@@ -45,52 +45,10 @@ export class ProfileComponent implements OnInit {
   errorMessage: string | null = null;
 
   // Mock User Courses Data (Informativo de Cursos al Día)
-  userCourses: UserCourse[] = [
-    {
-      id: 1,
-      name: 'Curso Completo de Desarrollo Web Fullstack (Angular & Node.js)',
-      category: 'Fullstack',
-      icon: '💻',
-      status: 'EN_CURSO',
-      progress: 65,
-      lastAccess: 'Módulo 3: Servicios REST y Autenticación'
-    },
-    {
-      id: 2,
-      name: 'Masterclass en TypeScript & Arquitectura Limpia',
-      category: 'TypeScript',
-      icon: '⚡',
-      status: 'FINALIZADO',
-      progress: 100,
-      lastAccess: 'Curso finalizado con éxito',
-      certificateId: 'CERT-TS-2026-9812'
-    },
-    {
-      id: 3,
-      name: 'Curso Avanzado de Bases de Datos & Prisma ORM',
-      category: 'Bases de Datos',
-      icon: '🗄️',
-      status: 'INSCRIPTO',
-      progress: 0,
-      lastAccess: 'Inscripción confirmada - Clases habilitadas'
-    },
-    {
-      id: 4,
-      name: 'DevOps Professional: Docker, Kubernetes & CI/CD Pipelines',
-      category: 'DevOps',
-      icon: '🐳',
-      status: 'EN_CURSO',
-      progress: 30,
-      lastAccess: 'Módulo 1: Fundamentos de Contenedores Docker'
-    }
-  ];
+  userCourses: UserCourse[] = [];
 
   // Payment Methods
-  paymentMethods: PaymentMethod[] = [
-    { id: '1', type: 'VISA', last4: '4821', holder: 'Carlos López', isDefault: true },
-    { id: '2', type: 'MERCADOPAGO', last4: 'MP-PAY', holder: 'carlos.lopez@gmail.com', isDefault: false },
-    { id: '3', type: 'MASTERCARD', last4: '8812', holder: 'Carlos López', isDefault: false }
-  ];
+  paymentMethods: PaymentMethod[] = [];
 
   // Payment Method Modal & Form State
   showPaymentModal = false;
@@ -102,12 +60,10 @@ export class ProfileComponent implements OnInit {
   paymentFormError: string | null = null;
 
   // Purchase Invoices History
-  invoices = [
-    { id: 'FAC-2026-001', date: '01/10/2026', concept: 'Inscripción Fullstack & TypeScript', amount: '$ 349.49 USD', status: 'Pagado' },
-    { id: 'FAC-2026-002', date: '15/09/2026', concept: 'Curso Prisma ORM', amount: '$ 89.99 USD', status: 'Pagado' }
-  ];
+  invoices: { id: string; date: string; concept: string; amount: string; status: string }[] = [];
 
   private enrollmentService = inject(EnrollmentService);
+  private route = inject(ActivatedRoute);
 
   constructor(
     public auth: AuthService,
@@ -115,8 +71,33 @@ export class ProfileComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.route.queryParams.subscribe(params => {
+      if (params['tab'] && ['cursos', 'certificados', 'pagos', 'seguridad'].includes(params['tab'])) {
+        this.activeTab = params['tab'];
+      }
+    });
+
     this.loadPaymentMethods();
     this.loadUserCourses();
+    this.loadInvoices();
+  }
+
+  loadInvoices(): void {
+    const user = this.auth.currentUser;
+    if (!user || !user.email) return;
+
+    const userEnrollments = this.enrollmentService.getUserEnrollments(user.email);
+    if (userEnrollments && userEnrollments.length > 0) {
+      this.invoices = userEnrollments.map((e: Enrollment) => ({
+        id: 'FAC-' + e.id.replace('INS-', ''),
+        date: e.date,
+        concept: `Inscripción: ${e.courseName}`,
+        amount: `$ ${e.price.toFixed(2)} ${e.currency || 'USD'}`,
+        status: 'Pagado'
+      }));
+    } else {
+      this.invoices = [];
+    }
   }
 
   loadUserCourses(): void {

@@ -12,6 +12,7 @@ import { ProductCardComponent } from '../../../shared/components/product-card/pr
 
 import { CurrencyService, CurrencyMode } from '../../../core/services/currency.service';
 import { EnrollmentService } from '../../../core/services/enrollment.service';
+import { PdfExportService } from '../../../core/services/pdf-export.service';
 
 export interface CourseSyllabus {
   author: string;
@@ -39,7 +40,34 @@ export class ProductListComponent implements OnInit {
   enrollingCourse: Product | null = null;
   showAuthModal = false;
   showCheckoutModal = false;
-  purchaseCompleted = false;
+
+  // Mini Checkout State
+  selectedPaymentMethod: 'CREDITO' | 'DEBITO' | 'MERCADOPAGO' | 'TRANSFERENCIA' = 'CREDITO';
+  userSavedCards: { id: string; type: string; last4: string; holder: string; isDefault: boolean }[] = [];
+  selectedSavedCardId = '';
+  isEnteringNewCard = false;
+
+  cardHolder = '';
+  cardNumber = '';
+  cardExpiry = '';
+  cardCvv = '';
+  saveCardForFuture = true;
+
+  // Institucional data
+  readonly mpAlias = 'ACADEMIA.TECH.MP';
+  readonly mpCvu = '0000003100098472918301';
+  readonly mpHolder = 'Academia Tech S.A. (CUIT 30-71649281-9)';
+
+  readonly bankName = 'Banco Santander Río';
+  readonly bankAlias = 'ACADEMIA.TECH.OFICIAL';
+  readonly bankCbu = '0720194888000036291045';
+  readonly institutionPhone = '+54 9 11 2345-6789';
+
+  checkoutProcessing = false;
+  checkoutSuccess = false;
+  lastEnrollmentResult: any = null;
+  checkoutError: string | null = null;
+  aliasCopied = false;
 
   // CSV Import State
   showImportModal = false;
@@ -140,6 +168,7 @@ export class ProductListComponent implements OnInit {
   ];
 
   private enrollmentService = inject(EnrollmentService);
+  private pdfExport = inject(PdfExportService);
 
   constructor(
     private productService: ProductService,
@@ -301,17 +330,152 @@ export class ProductListComponent implements OnInit {
     };
   }
 
-  // Enrollment & Checkout Guard
+  // Mini Checkout Flow
   onBuyProduct(product: Product): void {
     this.enrollingCourse = product;
     if (!this.auth.currentUser) {
-      // Prompt user to log in first!
       this.showAuthModal = true;
-    } else {
-      // Show Checkout confirmation modal!
-      this.showCheckoutModal = true;
-      this.purchaseCompleted = false;
+      return;
     }
+
+    this.showCheckoutModal = true;
+    this.checkoutProcessing = false;
+    this.checkoutSuccess = false;
+    this.checkoutError = null;
+    this.aliasCopied = false;
+    this.selectedPaymentMethod = 'CREDITO';
+
+    // Cargar medios de pago guardados del usuario
+    const userEmail = this.auth.currentUser.email || 'default';
+    const rawCards = localStorage.getItem(`payment_methods_${userEmail}`);
+    if (rawCards) {
+      try {
+        this.userSavedCards = JSON.parse(rawCards);
+      } catch (e) {
+        this.userSavedCards = [];
+      }
+    } else {
+      this.userSavedCards = [];
+    }
+
+    if (this.userSavedCards.length > 0) {
+      this.selectedSavedCardId = this.userSavedCards[0].id;
+      this.isEnteringNewCard = false;
+    } else {
+      this.selectedSavedCardId = 'NEW';
+      this.isEnteringNewCard = true;
+    }
+
+    this.cardHolder = this.auth.currentUser.displayName || '';
+    this.cardNumber = '';
+    this.cardExpiry = '';
+    this.cardCvv = '';
+    this.saveCardForFuture = true;
+  }
+
+  selectPaymentMethod(method: 'CREDITO' | 'DEBITO' | 'MERCADOPAGO' | 'TRANSFERENCIA'): void {
+    this.selectedPaymentMethod = method;
+    this.checkoutError = null;
+  }
+
+  onSelectCard(cardId: string): void {
+    this.selectedSavedCardId = cardId;
+    this.isEnteringNewCard = (cardId === 'NEW');
+  }
+
+  isCardValid(): boolean {
+    if (!this.isEnteringNewCard) {
+      return !!this.selectedSavedCardId && this.selectedSavedCardId !== 'NEW';
+    }
+    const cleanNum = this.cardNumber.replace(/\s/g, '');
+    const cleanHolder = this.cardHolder.trim();
+    const cleanExp = this.cardExpiry.trim();
+    const cleanCvv = this.cardCvv.trim();
+
+    return cleanNum.length >= 15 && cleanHolder.length >= 3 && cleanExp.length >= 4 && cleanCvv.length >= 3;
+  }
+
+  get canConfirmPayment(): boolean {
+    if (this.selectedPaymentMethod === 'CREDITO' || this.selectedPaymentMethod === 'DEBITO') {
+      return this.isCardValid();
+    }
+    return true;
+  }
+
+  copyToClipboard(text: string): void {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      this.aliasCopied = true;
+      setTimeout(() => this.aliasCopied = false, 2500);
+    }
+  }
+
+  confirmCheckout(): void {
+    if (!this.enrollingCourse || !this.auth.currentUser) return;
+
+    if ((this.selectedPaymentMethod === 'CREDITO' || this.selectedPaymentMethod === 'DEBITO') && !this.isCardValid()) {
+      this.checkoutError = '⚠️ Debes ingresar los datos completos de tu tarjeta (o seleccionar una guardada) para poder efectuar el pago.';
+      return;
+    }
+
+    this.checkoutProcessing = true;
+    this.checkoutError = null;
+
+    // Si ingresó una tarjeta nueva, guardarla en su perfil
+    if (this.isEnteringNewCard && (this.selectedPaymentMethod === 'CREDITO' || this.selectedPaymentMethod === 'DEBITO')) {
+      const cleanNum = this.cardNumber.replace(/\s/g, '');
+      const last4 = cleanNum.slice(-4) || '8842';
+      const cardType = cleanNum.startsWith('4') ? 'VISA' : (cleanNum.startsWith('5') ? 'MASTERCARD' : (this.selectedPaymentMethod === 'CREDITO' ? 'VISA' : 'MASTERCARD'));
+
+      const newCard = {
+        id: Date.now().toString(),
+        type: cardType,
+        last4: last4,
+        holder: this.cardHolder.trim() || (this.auth.currentUser.displayName || 'Titular Registrado'),
+        isDefault: this.userSavedCards.length === 0
+      };
+
+      if (this.saveCardForFuture || this.userSavedCards.length === 0) {
+        this.userSavedCards.push(newCard);
+        const userEmail = this.auth.currentUser.email || 'default';
+        localStorage.setItem(`payment_methods_${userEmail}`, JSON.stringify(this.userSavedCards));
+      }
+    }
+
+    // Nombre legible del medio de pago utilizado
+    let methodLabel = '';
+    if (this.selectedPaymentMethod === 'CREDITO') {
+      const last4 = this.isEnteringNewCard 
+        ? this.cardNumber.replace(/\s/g, '').slice(-4) 
+        : (this.userSavedCards.find(c => c.id === this.selectedSavedCardId)?.last4 || '4821');
+      methodLabel = `Tarjeta de Crédito (•••• ${last4})`;
+    } else if (this.selectedPaymentMethod === 'DEBITO') {
+      const last4 = this.isEnteringNewCard 
+        ? this.cardNumber.replace(/\s/g, '').slice(-4) 
+        : (this.userSavedCards.find(c => c.id === this.selectedSavedCardId)?.last4 || '4821');
+      methodLabel = `Tarjeta de Débito (•••• ${last4})`;
+    } else if (this.selectedPaymentMethod === 'MERCADOPAGO') {
+      methodLabel = `Mercado Pago (Alias: ${this.mpAlias})`;
+    } else {
+      methodLabel = `Transferencia Bancaria (WhatsApp: ${this.institutionPhone})`;
+    }
+
+    const currentCurr = this.currencyService.currentCurrency;
+
+    // Registrar inscripción permanente
+    const enrollment = this.enrollmentService.registerEnrollment(
+      this.enrollingCourse,
+      this.auth.currentUser,
+      methodLabel,
+      currentCurr
+    );
+
+    this.lastEnrollmentResult = enrollment;
+
+    setTimeout(() => {
+      this.checkoutProcessing = false;
+      this.checkoutSuccess = true;
+    }, 700);
   }
 
   goToLogin(): void {
@@ -327,26 +491,33 @@ export class ProductListComponent implements OnInit {
   closeCheckoutModal(): void {
     this.showCheckoutModal = false;
     this.enrollingCourse = null;
-    this.purchaseCompleted = false;
+    this.checkoutProcessing = false;
+    this.checkoutSuccess = false;
+    this.checkoutError = null;
   }
 
-  confirmCheckout(): void {
-    if (!this.enrollingCourse || !this.auth.currentUser) return;
-    this.purchaseCompleted = true;
+  goToProfilePayments(): void {
+    this.closeCheckoutModal();
+    this.router.navigate(['/profile'], { queryParams: { tab: 'pagos' } });
+  }
 
-    // Guardar la inscripción en el almacenamiento persistente
-    this.enrollmentService.registerEnrollment(
-      this.enrollingCourse,
-      this.auth.currentUser,
-      'Tarjeta de Crédito / Débito',
-      this.currencyService.currentCurrency
-    );
+  goToProfileCourses(): void {
+    this.closeCheckoutModal();
+    this.router.navigate(['/profile'], { queryParams: { tab: 'cursos' } });
+  }
 
-    setTimeout(() => {
-      const courseName = this.enrollingCourse?.name;
-      this.closeCheckoutModal();
-      alert(`🎉 ¡Inscripción confirmada y guardada con éxito! Ya puedes ver "${courseName}" en tu perfil académico.`);
-    }, 1200);
+  downloadReceiptPdf(): void {
+    if (!this.lastEnrollmentResult || !this.auth.currentUser) return;
+    const clientName = this.auth.currentUser.displayName || 'Cliente Registrado';
+    const clientEmail = this.auth.currentUser.email || '';
+    const invoice = {
+      id: 'FAC-' + this.lastEnrollmentResult.id.replace('INS-', ''),
+      date: this.lastEnrollmentResult.date,
+      concept: `Inscripción Oficial: ${this.lastEnrollmentResult.courseName}`,
+      amount: `$ ${this.lastEnrollmentResult.price.toFixed(2)} ${this.lastEnrollmentResult.currency}`,
+      status: 'Pagado'
+    };
+    this.pdfExport.generateInvoicePdf(clientName, clientEmail, invoice);
   }
 
   onEditProduct(product: Product): void {

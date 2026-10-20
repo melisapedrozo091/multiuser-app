@@ -184,40 +184,350 @@
     </div>
   </div>
 
-  <!-- MODAL: CHECKOUT DE COMPRA -->
+  <!-- MODAL: MINI CHECKOUT INTERACTIVO DE INSCRIPCIÓN Y PAGOS -->
   <div class="modal-overlay" *ngIf="showCheckoutModal" (click)="closeCheckoutModal()">
-    <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-card modal-large" (click)="$event.stopPropagation()" style="max-width: 620px;">
       <button class="close-btn" (click)="closeCheckoutModal()">✖</button>
-      <div class="modal-header">
-        <h2>🛒 Confirmación de Inscripción & Checkout</h2>
+      
+      <!-- Modal Header -->
+      <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 18px;">
+        <h2 style="font-size: 1.35rem; font-weight: 700; margin: 0; color: #fff; display: flex; align-items: center; gap: 10px;">
+          <i class="fa-solid fa-cart-shopping text-primary"></i> 
+          {{ checkoutSuccess ? '¡Pago e Inscripción Confirmados!' : 'Mini Checkout & Inscripción Académica' }}
+        </h2>
       </div>
-      <div class="modal-body" *ngIf="!purchaseCompleted">
-        <div class="checkout-summary card">
-          <h3>{{ enrollingCourse?.name }}</h3>
-          <p class="summary-price">
-            Monto a Abonar: <strong>{{ currencyService.format(enrollingCourse?.price || 0) }}</strong>
-          </p>
-          <p class="student-info">
-            Alumno: <strong>{{ auth.currentUser?.displayName || auth.currentUser?.email }}</strong> ({{ auth.currentUser?.email }})
+
+      <!-- ESTADO 1: FORMULARIO Y SELECCIÓN DE MEDIOS DE PAGO -->
+      <div class="modal-body" *ngIf="!checkoutProcessing && !checkoutSuccess">
+        <!-- Resumen del Curso -->
+        <div class="checkout-summary card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap;">
+            <div>
+              <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #818cf8; letter-spacing: 0.5px;">Curso Seleccionado</span>
+              <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff; margin: 4px 0 6px 0;">{{ enrollingCourse?.name }}</h3>
+              <p class="student-info" style="font-size: 0.85rem; color: #94a3b8; margin: 0;">
+                <i class="fa-solid fa-user-graduate me-1 text-primary"></i> Alumno: <strong>{{ auth.currentUser?.displayName || auth.currentUser?.email }}</strong> ({{ auth.currentUser?.email }})
+              </p>
+            </div>
+            <div style="text-align: right;">
+              <span style="font-size: 0.75rem; color: #94a3b8; display: block;">Total a Pagar:</span>
+              <strong style="font-size: 1.35rem; color: #34d399;">{{ currencyService.format(enrollingCourse?.price || 0) }}</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selector de Medios de Pago -->
+        <h4 style="font-size: 0.95rem; font-weight: 700; margin: 0 0 12px 0; color: #cbd5e1;">
+          Selecciona tu Medio de Pago:
+        </h4>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;">
+          <!-- Tarjeta de Crédito -->
+          <button type="button" 
+                  (click)="selectPaymentMethod('CREDITO')"
+                  [style.border-color]="selectedPaymentMethod === 'CREDITO' ? '#6366f1' : 'rgba(255,255,255,0.1)'"
+                  [style.background]="selectedPaymentMethod === 'CREDITO' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255,255,255,0.03)'"
+                  style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1.5px solid; border-radius: 10px; cursor: pointer; text-align: left; color: #fff;">
+            <i class="fa-solid fa-credit-card" style="font-size: 1.2rem; color: #818cf8;"></i>
+            <div>
+              <div style="font-weight: 600; font-size: 0.88rem;">Tarjeta de Crédito</div>
+              <div style="font-size: 0.75rem; color: #94a3b8;">Visa, Master, Amex</div>
+            </div>
+          </button>
+
+          <!-- Tarjeta de Débito -->
+          <button type="button" 
+                  (click)="selectPaymentMethod('DEBITO')"
+                  [style.border-color]="selectedPaymentMethod === 'DEBITO' ? '#6366f1' : 'rgba(255,255,255,0.1)'"
+                  [style.background]="selectedPaymentMethod === 'DEBITO' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255,255,255,0.03)'"
+                  style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1.5px solid; border-radius: 10px; cursor: pointer; text-align: left; color: #fff;">
+            <i class="fa-solid fa-wallet" style="font-size: 1.2rem; color: #38bdf8;"></i>
+            <div>
+              <div style="font-weight: 600; font-size: 0.88rem;">Tarjeta de Débito</div>
+              <div style="font-size: 0.75rem; color: #94a3b8;">Débito Inmediato</div>
+            </div>
+          </button>
+
+          <!-- Mercado Pago con Alias -->
+          <button type="button" 
+                  (click)="selectPaymentMethod('MERCADOPAGO')"
+                  [style.border-color]="selectedPaymentMethod === 'MERCADOPAGO' ? '#009ee3' : 'rgba(255,255,255,0.1)'"
+                  [style.background]="selectedPaymentMethod === 'MERCADOPAGO' ? 'rgba(0, 158, 227, 0.15)' : 'rgba(255,255,255,0.03)'"
+                  style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1.5px solid; border-radius: 10px; cursor: pointer; text-align: left; color: #fff;">
+            <i class="fa-solid fa-handshake" style="font-size: 1.2rem; color: #009ee3;"></i>
+            <div>
+              <div style="font-weight: 600; font-size: 0.88rem;">Mercado Pago</div>
+              <div style="font-size: 0.75rem; color: #94a3b8;">Alias Institucional</div>
+            </div>
+          </button>
+
+          <!-- Transferencia / WhatsApp -->
+          <button type="button" 
+                  (click)="selectPaymentMethod('TRANSFERENCIA')"
+                  [style.border-color]="selectedPaymentMethod === 'TRANSFERENCIA' ? '#10b981' : 'rgba(255,255,255,0.1)'"
+                  [style.background]="selectedPaymentMethod === 'TRANSFERENCIA' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.03)'"
+                  style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1.5px solid; border-radius: 10px; cursor: pointer; text-align: left; color: #fff;">
+            <i class="fa-solid fa-building-columns" style="font-size: 1.2rem; color: #34d399;"></i>
+            <div>
+              <div style="font-weight: 600; font-size: 0.88rem;">Transferencia / CBU</div>
+              <div style="font-size: 0.75rem; color: #94a3b8;">Comprobante WhatsApp</div>
+            </div>
+          </button>
+        </div>
+
+        <!-- DETALLE SEGÚN MÉTODO: TARJETA DE CRÉDITO O DÉBITO -->
+        <div *ngIf="selectedPaymentMethod === 'CREDITO' || selectedPaymentMethod === 'DEBITO'" 
+             style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 18px; margin-bottom: 18px;">
+          
+          <!-- Lista de tarjetas guardadas si tiene -->
+          <div *ngIf="userSavedCards.length > 0" style="margin-bottom: 15px;">
+            <label style="display: block; font-size: 0.85rem; color: #94a3b8; margin-bottom: 8px; font-weight: 600;">
+              Tarjetas Guardadas en tu Cuenta:
+            </label>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <label *ngFor="let card of userSavedCards" 
+                     (click)="onSelectCard(card.id)"
+                     style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.2); cursor: pointer;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <input type="radio" name="savedCardSelect" [checked]="selectedSavedCardId === card.id" />
+                  <span style="font-weight: 600; color: #fff;">
+                    <i class="fa-solid fa-credit-card me-1 text-primary"></i> {{ card.type }} •••• {{ card.last4 }}
+                  </span>
+                  <span style="font-size: 0.8rem; color: #94a3b8;">({{ card.holder }})</span>
+                </div>
+                <span *ngIf="card.isDefault" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-size: 0.7rem; padding: 2px 6px; border-radius: 6px;">Predeterminada</span>
+              </label>
+
+              <label (click)="onSelectCard('NEW')"
+                     style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; border: 1px dashed rgba(99, 102, 241, 0.4); background: rgba(99, 102, 241, 0.05); cursor: pointer;">
+                <input type="radio" name="savedCardSelect" [checked]="selectedSavedCardId === 'NEW'" />
+                <span style="font-weight: 600; color: #818cf8;">
+                  <i class="fa-solid fa-plus me-1"></i> Ingresar otra tarjeta de {{ selectedPaymentMethod === 'CREDITO' ? 'crédito' : 'débito' }}
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Formulario de ingreso de tarjeta nueva (si no tiene o eligió ingresar) -->
+          <div *ngIf="isEnteringNewCard">
+            <div style="font-size: 0.85rem; font-weight: 600; color: #818cf8; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-id-card"></i> Ingresa los datos de tu tarjeta (Requerido para pagar):
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div>
+                <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">Nombre del Titular (como figura en el plástico)</label>
+                <input type="text" [(ngModel)]="cardHolder" placeholder="Ej: Melisa Pedrozo" 
+                       style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: #0f172a; color: #fff; font-size: 0.9rem;" />
+              </div>
+
+              <div>
+                <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">Número de Tarjeta (16 dígitos)</label>
+                <input type="text" [(ngModel)]="cardNumber" maxlength="19" placeholder="4500 1234 5678 9012" 
+                       style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: #0f172a; color: #fff; font-size: 0.9rem;" />
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                  <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">Vencimiento (MM/AA)</label>
+                  <input type="text" [(ngModel)]="cardExpiry" maxlength="5" placeholder="12/28" 
+                         style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: #0f172a; color: #fff; font-size: 0.9rem;" />
+                </div>
+                <div>
+                  <label style="display: block; font-size: 0.8rem; color: #94a3b8; margin-bottom: 4px;">Código de Seguridad (CVV)</label>
+                  <input type="password" [(ngModel)]="cardCvv" maxlength="4" placeholder="123" 
+                         style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15); background: #0f172a; color: #fff; font-size: 0.9rem;" />
+                </div>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                <input type="checkbox" id="saveCardChk" [(ngModel)]="saveCardForFuture" style="width: 16px; height: 16px; cursor: pointer;" />
+                <label for="saveCardChk" style="font-size: 0.82rem; color: #94a3b8; cursor: pointer;">
+                  Guardar esta tarjeta en mi perfil para futuras compras
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Aviso de validación de tarjeta -->
+          <div *ngIf="!isCardValid()" style="margin-top: 12px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; color: #fbbf24; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>Debes ingresar o seleccionar una tarjeta válida para habilitar el pago.</span>
+          </div>
+        </div>
+
+        <!-- DETALLE SEGÚN MÉTODO: MERCADO PAGO CON ALIAS INSTITUCIONAL -->
+        <div *ngIf="selectedPaymentMethod === 'MERCADOPAGO'" 
+             style="background: rgba(0, 158, 227, 0.08); border: 1px solid rgba(0, 158, 227, 0.25); border-radius: 12px; padding: 18px; margin-bottom: 18px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <span style="background: #009ee3; color: #fff; font-weight: 700; font-size: 0.75rem; padding: 3px 8px; border-radius: 6px;">OFICIAL</span>
+            <strong style="color: #fff; font-size: 0.95rem;">Datos de Cuenta Mercado Pago Institucional:</strong>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.25); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; font-size: 0.88rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+              <span style="color: #94a3b8;">Alias Institucional Mercado Pago:</span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <strong style="color: #38bdf8; font-size: 1.05rem; letter-spacing: 0.5px;">{{ mpAlias }}</strong>
+                <button type="button" (click)="copyToClipboard(mpAlias)" style="padding: 4px 10px; border-radius: 6px; background: rgba(0, 158, 227, 0.2); color: #38bdf8; border: 1px solid rgba(0, 158, 227, 0.4); cursor: pointer; font-size: 0.78rem;">
+                  <i class="fa-regular fa-copy me-1"></i> {{ aliasCopied ? '¡Copiado! ✓' : 'Copiar' }}
+                </button>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="color: #94a3b8;">CVU:</span>
+              <strong style="color: #fff; font-family: monospace;">{{ mpCvu }}</strong>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="color: #94a3b8;">Titular:</span>
+              <span style="color: #cbd5e1;">{{ mpHolder }}</span>
+            </div>
+          </div>
+
+          <p style="font-size: 0.8rem; color: #94a3b8; margin: 12px 0 0 0; line-height: 1.4;">
+            <i class="fa-solid fa-circle-info text-info me-1"></i> Abre tu App de Mercado Pago, transfiere el valor del curso al alias indicado y pulsa <strong>"Confirmar Pago & Inscripción"</strong>.
           </p>
         </div>
-        <div class="payment-methods">
-          <h4>Selecciona Medio de Pago:</h4>
-          <label class="payment-option">
-            <input type="radio" name="pay" checked /> 💳 Tarjeta de Crédito / Débito (MercadoPago / Stripe)
-          </label>
-          <label class="payment-option">
-            <input type="radio" name="pay" /> 🏦 Transferencia Bancaria
-          </label>
+
+        <!-- DETALLE SEGÚN MÉTODO: TRANSFERENCIA BANCARIA & WHATSAPP PARA COMPROBANTE -->
+        <div *ngIf="selectedPaymentMethod === 'TRANSFERENCIA'" 
+             style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 12px; padding: 18px; margin-bottom: 18px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <span style="background: #10b981; color: #fff; font-weight: 700; font-size: 0.75rem; padding: 3px 8px; border-radius: 6px;">BANCO</span>
+            <strong style="color: #fff; font-size: 0.95rem;">Transferencia Bancaria & Envío de Comprobante:</strong>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.25); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; font-size: 0.88rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+              <span style="color: #94a3b8;">Alias CBU Institucional:</span>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <strong style="color: #34d399; font-size: 1.05rem; letter-spacing: 0.5px;">{{ bankAlias }}</strong>
+                <button type="button" (click)="copyToClipboard(bankAlias)" style="padding: 4px 10px; border-radius: 6px; background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); cursor: pointer; font-size: 0.78rem;">
+                  <i class="fa-regular fa-copy me-1"></i> {{ aliasCopied ? '¡Copiado! ✓' : 'Copiar' }}
+                </button>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="color: #94a3b8;">CBU Bancario:</span>
+              <strong style="color: #fff; font-family: monospace;">{{ bankCbu }}</strong>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+              <span style="color: #94a3b8;">Banco / Entidad:</span>
+              <span style="color: #cbd5e1;">{{ bankName }}</span>
+            </div>
+
+            <!-- WhatsApp de la Institución para Comprobantes -->
+            <div style="background: rgba(37, 211, 102, 0.15); border: 1px solid rgba(37, 211, 102, 0.3); border-radius: 8px; padding: 12px; margin-top: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <span style="font-size: 0.78rem; color: #86efac; font-weight: 700; text-transform: uppercase; display: block;">
+                  <i class="fa-brands fa-whatsapp me-1"></i> WhatsApp de Admisión & Comprobantes:
+                </span>
+                <strong style="font-size: 1.05rem; color: #fff;">{{ institutionPhone }}</strong>
+              </div>
+              <a href="https://wa.me/5491123456789?text=Hola!%20Envio%20mi%20comprobante%20de%20pago%20para%20la%20inscripcion" 
+                 target="_blank" 
+                 style="background: #25d366; color: #000; font-weight: 700; font-size: 0.8rem; padding: 6px 14px; border-radius: 6px; text-decoration: none; display: flex; align-items: center; gap: 6px;">
+                <i class="fa-brands fa-whatsapp"></i> Enviar Comprobante
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mensaje de Error en Checkout -->
+        <div class="alert alert-danger" *ngIf="checkoutError" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 10px 14px; border-radius: 8px; font-size: 0.88rem; margin-bottom: 15px;">
+          {{ checkoutError }}
         </div>
       </div>
-      <div class="modal-body text-center" *ngIf="purchaseCompleted">
-        <div class="spinner"></div>
-        <p>Procesando pago e inscripción en el campus...</p>
+
+      <!-- ESTADO 2: PROCESANDO PAGO -->
+      <div class="modal-body text-center" *ngIf="checkoutProcessing" style="padding: 40px 20px;">
+        <i class="fa-solid fa-circle-notch fa-spin fa-3x text-primary" style="margin-bottom: 15px;"></i>
+        <h3 style="color: #fff; font-size: 1.2rem; margin: 0 0 6px 0;">Procesando pago seguro...</h3>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin: 0;">Confirmando tu matriculación e inscripción en el campus virtual.</p>
       </div>
-      <div class="modal-footer" *ngIf="!purchaseCompleted">
-        <button class="btn btn-secondary" (click)="closeCheckoutModal()">Cancelar</button>
-        <button class="btn btn-primary" (click)="confirmCheckout()">✅ Pagar e Inscribirme</button>
+
+      <!-- ESTADO 3: PANTALLA DE PAGO EFECTUADO CON ÉXITO -->
+      <div class="modal-body text-center" *ngIf="checkoutSuccess" style="padding: 25px 20px;">
+        <div style="width: 70px; height: 70px; border-radius: 50%; background: rgba(16, 185, 129, 0.2); color: #34d399; display: flex; align-items: center; justify-content: center; font-size: 2.2rem; margin: 0 auto 15px auto; border: 2px solid #10b981;">
+          <i class="fa-solid fa-check"></i>
+        </div>
+
+        <h3 style="font-size: 1.5rem; font-weight: 800; color: #fff; margin: 0 0 8px 0;">
+          🎉 ¡Pago Efectuado con Éxito!
+        </h3>
+        <p style="color: #94a3b8; font-size: 0.92rem; margin: 0 0 20px 0;">
+          Tu inscripción al curso ha sido confirmada y registrada en tu cuenta.
+        </p>
+
+        <!-- Tarjeta de Recibo Digital Oficial -->
+        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 18px; text-align: left; margin-bottom: 25px;">
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px; margin-bottom: 10px;">
+            <span style="color: #94a3b8; font-size: 0.82rem;">ID de Transacción / Inscripción:</span>
+            <strong style="color: #818cf8; font-family: monospace;">{{ lastEnrollmentResult?.id }}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px; margin-bottom: 10px;">
+            <span style="color: #94a3b8; font-size: 0.82rem;">Curso Habilitado:</span>
+            <strong style="color: #fff; font-size: 0.9rem;">{{ lastEnrollmentResult?.courseName }}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px; margin-bottom: 10px;">
+            <span style="color: #94a3b8; font-size: 0.82rem;">Medio de Pago Utilizado:</span>
+            <span style="color: #38bdf8; font-weight: 600;">{{ lastEnrollmentResult?.paymentMethod }}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: #94a3b8; font-size: 0.82rem;">Monto Acreditado:</span>
+            <strong style="color: #34d399; font-size: 1.2rem;">$ {{ lastEnrollmentResult?.price }} {{ lastEnrollmentResult?.currency }}</strong>
+          </div>
+        </div>
+
+        <!-- Botones de Acción Posterior al Pago -->
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Botón Principal: Ir a la Solapa de Pagos en Mi Perfil -->
+          <button (click)="goToProfilePayments()" 
+                  class="btn btn-primary" 
+                  style="padding: 12px 20px; border-radius: 10px; font-weight: 700; font-size: 0.95rem; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #fff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);">
+            <i class="fa-solid fa-receipt"></i> Ver en la Solapa de Pagos (Mi Perfil)
+          </button>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <button (click)="goToProfileCourses()" 
+                    class="btn btn-secondary" 
+                    style="padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.15); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <i class="fa-solid fa-graduation-cap"></i> Ver Mis Cursos
+            </button>
+
+            <button (click)="downloadReceiptPdf()" 
+                    class="btn btn-secondary" 
+                    style="padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <i class="fa-solid fa-file-pdf"></i> Descargar Factura PDF
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer en estado normal -->
+      <div class="modal-footer" *ngIf="!checkoutProcessing && !checkoutSuccess" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; margin-top: 15px;">
+        <button class="btn btn-secondary" (click)="closeCheckoutModal()" style="padding: 9px 18px; border-radius: 8px;">
+          Cancelar
+        </button>
+        <button class="btn btn-primary" 
+                (click)="confirmCheckout()" 
+                [disabled]="!canConfirmPayment"
+                [style.opacity]="canConfirmPayment ? '1' : '0.5'"
+                [style.cursor]="canConfirmPayment ? 'pointer' : 'not-allowed'"
+                style="padding: 9px 22px; border-radius: 8px; font-weight: 700; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; border: none; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-lock"></i> Confirmar Pago & Inscripción
+        </button>
+      </div>
+
+      <!-- Footer en éxito -->
+      <div class="modal-footer justify-center" *ngIf="checkoutSuccess" style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 15px; margin-top: 15px;">
+        <button class="btn btn-secondary" (click)="closeCheckoutModal()" style="padding: 8px 24px; border-radius: 8px;">
+          Continuar Explorando Cursos
+        </button>
       </div>
     </div>
   </div>
