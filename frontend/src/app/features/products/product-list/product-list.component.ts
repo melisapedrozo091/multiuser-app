@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -139,13 +139,14 @@ export class ProductListComponent implements OnInit {
     }
   ];
 
+  private enrollmentService = inject(EnrollmentService);
+
   constructor(
     private productService: ProductService,
     public auth: AuthService,
     public currencyService: CurrencyService,
     private csvExport: CsvExportService,
     private adminService: AdminService,
-    private enrollmentService: EnrollmentService,
     private router: Router
   ) {}
 

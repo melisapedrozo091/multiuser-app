@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -24,6 +24,7 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy {
   loading = true;
   error: string | null = null;
 
+  public enrollmentService = inject(EnrollmentService);
   private chart1: Chart | null = null;
   private chart2: Chart | null = null;
 
@@ -31,8 +32,7 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy {
     private adminService: AdminService,
     public csvExport: CsvExportService,
     private pdfExport: PdfExportService,
-    public auth: AuthService,
-    public enrollmentService: EnrollmentService
+    public auth: AuthService
   ) {}
 
   async ngOnInit(): Promise<void> {

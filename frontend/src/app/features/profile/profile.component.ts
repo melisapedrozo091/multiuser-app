@@ -1,10 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { PdfExportService } from '../../core/services/pdf-export.service';
-import { EnrollmentService } from '../../core/services/enrollment.service';
+import { EnrollmentService, Enrollment } from '../../core/services/enrollment.service';
 
 export interface UserCourse {
   id: number;
@@ -107,10 +107,11 @@ export class ProfileComponent implements OnInit {
     { id: 'FAC-2026-002', date: '15/09/2026', concept: 'Curso Prisma ORM', amount: '$ 89.99 USD', status: 'Pagado' }
   ];
 
+  private enrollmentService = inject(EnrollmentService);
+
   constructor(
     public auth: AuthService,
-    private pdfExport: PdfExportService,
-    private enrollmentService: EnrollmentService
+    private pdfExport: PdfExportService
   ) {}
 
   ngOnInit(): void {
@@ -124,7 +125,7 @@ export class ProfileComponent implements OnInit {
 
     const enrollments = this.enrollmentService.getUserEnrollments(user.email);
     if (enrollments && enrollments.length > 0) {
-      this.userCourses = enrollments.map(e => ({
+      this.userCourses = enrollments.map((e: Enrollment) => ({
         id: e.courseId,
         name: e.courseName,
         category: 'Formación Tech',
