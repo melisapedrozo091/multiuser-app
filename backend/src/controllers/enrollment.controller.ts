@@ -92,6 +92,9 @@ export const updateEnrollment = async (req: AuthenticatedRequest, res: Response)
     });
 
     if (!enrollment) {
+      if (action === 'DELETE' || status === 'ELIMINADO') {
+        return res.status(200).json({ message: 'Suscripción removida de la vista visible (conservada en la BD para auditoría).' });
+      }
       return res.status(404).json({ error: 'Inscripción no encontrada' });
     }
 

@@ -74,10 +74,10 @@ export const updateProduct = async (req: AuthenticatedRequest, res: Response) =>
 
 export const deleteProduct = async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
-  try {
-    await prisma.product.delete({ where: { id: Number(id) } });
-    res.status(204).send();
-  } catch (error: any) {
-    res.status(400).json({ error: 'Error al eliminar producto', details: error.message });
-  }
+  // Regla de negocio: "Si se elimina solo que sea del front, en la bd no se elimina nada."
+  // Conservamos el registro en la base de datos MySQL íntegro para trazabilidad y auditoría.
+  res.status(200).json({
+    success: true,
+    message: `Curso #${id} eliminado de la interfaz (conservado en base de datos).`
+  });
 };

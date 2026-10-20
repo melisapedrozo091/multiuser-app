@@ -139,6 +139,15 @@
                 <i class="fa-solid fa-rotate-left me-1"></i> Cancelar / Arrepentimiento
               </button>
 
+              <!-- Eliminar de la vista (Admin o Curso Anulado) -->
+              <button *ngIf="isAdmin || course.status === 'ANULADO'" 
+                      (click)="deleteCourseFromView(course)" 
+                      class="btn btn-sm" 
+                      title="Eliminar de mi lista visible (conservado en base de datos)"
+                      style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 6px 12px; font-size: 0.78rem; cursor: pointer;">
+                <i class="fa-solid fa-trash-can me-1"></i> Eliminar
+              </button>
+
               <!-- Descargar Certificado si está finalizado -->
               <button *ngIf="course.status === 'FINALIZADO'" (click)="downloadCertificatePdf(course)" 
                       class="btn btn-sm btn-success" 
@@ -219,8 +228,8 @@
               <button (click)="openEditPaymentModal(pm)" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer;">
                 <i class="fa-solid fa-pen"></i> Editar
               </button>
-              <button (click)="deletePaymentMethod(pm.id)" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer;">
-                <i class="fa-solid fa-trash"></i>
+              <button (click)="deletePaymentMethod(pm.id)" style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Eliminar medio de pago">
+                <i class="fa-solid fa-trash-can"></i> Eliminar
               </button>
             </div>
           </div>

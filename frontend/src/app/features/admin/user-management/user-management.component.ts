@@ -65,4 +65,10 @@ export class UserManagementComponent implements OnInit {
       user.role = newRole;
     }
   }
+
+  deleteUserFromView(user: User): void {
+    if (confirm(`¿Deseas remover al usuario ${user.email} de la vista visible? (En la base de datos se conservará íntegro).`)) {
+      this.users = this.users.filter(u => u.id !== user.id);
+    }
+  }
 }

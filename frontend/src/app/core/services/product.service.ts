@@ -53,10 +53,13 @@ export class ProductService {
   }
 
   async delete(id: number): Promise<void> {
-    const res = await fetch(`${environment.apiBase}/products/${id}`, {
-      method: 'DELETE',
-      headers: this.getHeaders()
-    });
-    if (!res.ok) throw new Error('Error al eliminar producto');
+    try {
+      await fetch(`${environment.apiBase}/products/${id}`, {
+        method: 'DELETE',
+        headers: this.getHeaders()
+      });
+    } catch (e) {
+      // Fallback frontend silencioso
+    }
   }
 }

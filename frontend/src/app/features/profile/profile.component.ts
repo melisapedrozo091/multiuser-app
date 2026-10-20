@@ -356,6 +356,19 @@ export class ProfileComponent implements OnInit {
     this.closePaymentModal();
   }
 
+  get isAdmin(): boolean {
+    return this.auth.currentUser?.role === 'ADMIN';
+  }
+
+  deleteCourseFromView(course: UserCourse): void {
+    if (confirm(`¿Deseas remover el curso "${course.name}" de la lista visible? (En la base de datos se conservará íntegro).`)) {
+      const res = this.enrollmentService.softDeleteEnrollment(course.enrollmentId);
+      this.successMessage = res.message;
+      this.errorMessage = null;
+      this.loadUserCourses();
+    }
+  }
+
   deletePaymentMethod(id: string): void {
     if (confirm('¿Estás seguro de que deseas eliminar este medio de pago?')) {
       this.paymentMethods = this.paymentMethods.filter(p => p.id !== id);
@@ -363,6 +376,7 @@ export class ProfileComponent implements OnInit {
         this.paymentMethods[0].isDefault = true;
       }
       this.savePaymentMethodsToStorage();
+      this.successMessage = 'Medio de pago eliminado exitosamente.';
     }
   }
 

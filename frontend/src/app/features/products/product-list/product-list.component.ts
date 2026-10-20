@@ -214,6 +214,21 @@ export class ProductListComponent implements OnInit {
     return list;
   }
 
+  private readonly DELETED_PRODUCTS_KEY = 'deleted_courses_front_ids';
+
+  private getDeletedProductIds(): number[] {
+    const raw = localStorage.getItem(this.DELETED_PRODUCTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }
+
+  private saveDeletedProductId(id: number): void {
+    const ids = this.getDeletedProductIds();
+    if (!ids.includes(id)) {
+      ids.push(id);
+      localStorage.setItem(this.DELETED_PRODUCTS_KEY, JSON.stringify(ids));
+    }
+  }
+
   async loadProducts(): Promise<void> {
     this.loading = true;
     try {
@@ -223,6 +238,9 @@ export class ProductListComponent implements OnInit {
       this.error = 'Cargando catálogo en modo demostración.';
       this.products = this.defaultCourses;
     } finally {
+      // Filtrar los cursos eliminados de la interfaz (manteniéndolos en la BD)
+      const deletedIds = this.getDeletedProductIds();
+      this.products = this.products.filter(p => !deletedIds.includes(p.id));
       this.loading = false;
     }
   }
@@ -531,13 +549,13 @@ export class ProductListComponent implements OnInit {
   }
 
   async onDeleteProduct(id: number): Promise<void> {
-    if (confirm('¿Estás seguro de eliminar este curso?')) {
-      try {
-        await this.productService.delete(id);
-        this.products = this.products.filter(p => p.id !== id);
-      } catch (err) {
-        alert('Error al eliminar');
-      }
+    if (confirm('¿Estás seguro de eliminar este curso del catálogo visible? (En la base de datos se conservará íntegro).')) {
+      // 1. Eliminar inmediatamente de la lista visible
+      this.products = this.products.filter(p => p.id !== id);
+      // 2. Guardar en almacenamiento para que permanezca oculto en frontend
+      this.saveDeletedProductId(id);
+      // 3. Sincronizar suavemente con backend (sin destruir datos en BD)
+      await this.productService.delete(id);
     }
   }
 
