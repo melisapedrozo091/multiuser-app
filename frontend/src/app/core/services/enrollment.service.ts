@@ -4,7 +4,8 @@ import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
 
 export interface Enrollment {
-  id: string;
+  id: string;       // Display code: INS-2026-001
+  dbId?: string;    // Real DB cuid for API calls
   userId: string;
   userEmail: string;
   userName: string;

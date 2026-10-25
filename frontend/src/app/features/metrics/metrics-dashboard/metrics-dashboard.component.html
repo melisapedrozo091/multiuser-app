@@ -7,11 +7,21 @@
       </h2>
       <p style="color: #94a3b8; font-size: 0.9rem; margin: 5px 0 0 0;">
         Estadísticas, gráficos circulares e inscripciones almacenadas en tiempo real (Exclusivo Administrador)
+        <span *ngIf="isFirestoreConnected" style="display: inline-flex; align-items: center; gap: 5px; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 10px; border-radius: 12px; font-size: 0.78rem; margin-left: 8px; border: 1px solid rgba(16, 185, 129, 0.3);">
+          <span style="width: 6px; height: 6px; background: #34d399; border-radius: 50%; display: inline-block; animation: pulse-dot 1.5s infinite;"></span>
+          Firebase Firestore — Tiempo Real
+        </span>
+        <span *ngIf="!isFirestoreConnected" style="display: inline-flex; align-items: center; gap: 5px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; padding: 2px 10px; border-radius: 12px; font-size: 0.78rem; margin-left: 8px; border: 1px solid rgba(245, 158, 11, 0.3);">
+          <i class="fa-solid fa-database" style="font-size: 0.7rem;"></i> Modo Local / REST API
+        </span>
       </p>
     </div>
 
     <!-- Admin Action Buttons -->
     <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+      <button *ngIf="isFirestoreConnected" (click)="migrateToFirestore()" class="btn btn-sm" style="padding: 10px 18px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 8px; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); cursor: pointer;">
+        <i class="fa-solid fa-cloud-arrow-up"></i> Migrar a Firestore
+      </button>
       <button (click)="exportReportCsv()" class="btn btn-secondary" style="padding: 10px 18px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 8px; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); cursor: pointer;">
         <i class="fa-solid fa-file-csv"></i> Exportar CSV
       </button>
@@ -53,14 +63,14 @@
         </div>
       </div>
 
-      <!-- Consultas en Foro -->
+      <!-- Ingresos Totales -->
       <div class="kpi-card" style="background: var(--card-bg, #1e293b); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 14px; padding: 20px; display: flex; align-items: center; gap: 16px;">
         <div style="width: 50px; height: 50px; border-radius: 12px; background: rgba(56, 189, 248, 0.2); color: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
-          <i class="fa-solid fa-comments"></i>
+          <i class="fa-solid fa-dollar-sign"></i>
         </div>
         <div>
-          <span style="font-size: 0.8rem; color: #94a3b8; display: block;">Consultas Foro</span>
-          <span style="font-size: 1.7rem; font-weight: 700; color: #fff;">{{ metrics.totalForumQueries }}</span>
+          <span style="font-size: 0.8rem; color: #94a3b8; display: block;">Ingresos</span>
+          <span style="font-size: 1.7rem; font-weight: 700; color: #fff;">$ {{ metrics.totalRevenueUsd }}</span>
         </div>
       </div>
 
@@ -87,32 +97,46 @@
       </div>
     </div>
 
-    <!-- SECCIÓN DE GRÁFICOS REDONDOS (CIRCULARES) -->
+    <!-- SECCIÓN DE GRÁFICOS -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; margin-bottom: 35px;">
       <!-- Gráfico 1: Estado Global de Cursos & Alumnos (Doughnut) -->
-      <div style="background: var(--card-bg, #1e293b); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center;">
+      <div class="chart-card" style="background: var(--card-bg, #1e293b); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center;">
         <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0 0 5px 0; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px;">
           <i class="fa-solid fa-chart-pie text-success"></i> Estado Global de Cursos & Inscripciones
         </h3>
         <p style="color: #94a3b8; font-size: 0.82rem; margin-bottom: 15px;">
           Distribución de alumnos por avance (Finalizados, En Curso, Inscriptos y Anulados)
         </p>
-        <div style="position: relative; height: 260px; width: 100%;">
-          <canvas id="coursesDoughnutChart"></canvas>
+        <div style="position: relative; height: 280px; width: 100%;">
+          <canvas #doughnutCanvas></canvas>
         </div>
       </div>
 
       <!-- Gráfico 2: Nivel de Satisfacción y Puntuaciones (Pie) -->
-      <div style="background: var(--card-bg, #1e293b); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center;">
+      <div class="chart-card" style="background: var(--card-bg, #1e293b); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center;">
         <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0 0 5px 0; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px;">
           <i class="fa-solid fa-star text-warning"></i> Nivel de Satisfacción de Alumnos
         </h3>
         <p style="color: #94a3b8; font-size: 0.82rem; margin-bottom: 15px;">
           Distribución porcentual de calificaciones otorgadas por los alumnos
         </p>
-        <div style="position: relative; height: 260px; width: 100%;">
-          <canvas id="satisfactionPieChart"></canvas>
+        <div style="position: relative; height: 280px; width: 100%;">
+          <canvas #pieCanvas></canvas>
         </div>
+      </div>
+    </div>
+
+    <!-- Gráfico 3: Ingresos y Ventas por Mes (Bar Chart) - FULL WIDTH -->
+    <div class="chart-card" style="background: var(--card-bg, #1e293b); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center; margin-bottom: 35px;">
+      <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0 0 5px 0; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <i class="fa-solid fa-chart-bar text-info"></i> Ingresos & Inscripciones por Mes
+        <span *ngIf="isFirestoreConnected" style="font-size: 0.7rem; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 8px; border-radius: 8px; font-weight: 600;">EN VIVO</span>
+      </h3>
+      <p style="color: #94a3b8; font-size: 0.82rem; margin-bottom: 15px;">
+        Evolución de ingresos (USD) y cantidad de inscripciones en los últimos 6 meses — se actualiza en tiempo real
+      </p>
+      <div style="position: relative; height: 300px; width: 100%;">
+        <canvas #barCanvas></canvas>
       </div>
     </div>
 
@@ -129,7 +153,7 @@
         </div>
         <div style="display: flex; align-items: center; gap: 15px;">
           <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #cbd5e1; cursor: pointer; background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-            <input type="checkbox" [(ngModel)]="showDeleted" (change)="calculateRealTimeMetrics(); renderCharts()" style="cursor: pointer;" />
+            <input type="checkbox" [checked]="showDeleted" (click)="toggleShowDeleted()" style="cursor: pointer;" />
             <span>Mostrar papelera / eliminados</span>
           </label>
           <span style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 0.85rem; border: 1px solid rgba(16, 185, 129, 0.3);">

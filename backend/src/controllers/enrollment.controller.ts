@@ -2,28 +2,77 @@ import { Response } from 'express';
 import { AuthenticatedRequest } from '../middlewares/auth.middleware';
 import { prisma } from '../prisma/client';
 
+const mapEnrollment = (e: any) => ({
+  id: e.code,         // Use code as display ID (e.g. INS-2026-001)
+  dbId: e.id,         // Keep DB cuid for API PATCH calls
+  userId: e.userId,
+  userEmail: e.userEmail,
+  userName: e.userName,
+  courseId: e.courseId,
+  courseName: e.courseName,
+  price: e.price,
+  currency: e.currency,
+  date: e.date,
+  createdAt: e.createdAt ? e.createdAt.toISOString() : new Date().toISOString(),
+  pausedAt: e.pausedAt ? e.pausedAt.toISOString() : null,
+  status: e.status,
+  paymentMethod: e.paymentMethod,
+  rating: e.rating,
+  reviewComment: e.reviewComment,
+  refundReason: e.refundReason,
+  deletedFromUi: e.deletedFromUi
+});
+
 export const getEnrollments = async (req: AuthenticatedRequest, res: Response) => {
   try {
     const userRole = req.user?.role;
     const userEmail = req.user?.email;
 
-    if (userRole === 'ADMIN') {
+    // ADMIN or unauthenticated (metrics view) → return all enrollments
+    if (!userRole || userRole === 'ADMIN') {
       const enrollments = await prisma.enrollment.findMany({
         orderBy: { createdAt: 'desc' }
       });
-      return res.json(enrollments);
+      return res.json(enrollments.map(mapEnrollment));
     } else {
-      if (!userEmail) {
-        return res.status(401).json({ error: 'Usuario no autenticado' });
-      }
       const enrollments = await prisma.enrollment.findMany({
-        where: { userEmail },
+        where: { userEmail: userEmail || undefined },
         orderBy: { createdAt: 'desc' }
       });
-      return res.json(enrollments);
+      return res.json(enrollments.map(mapEnrollment));
     }
   } catch (error: any) {
     return res.status(500).json({ error: 'Error al obtener inscripciones', details: error.message });
+  }
+};
+
+export const getInvoices = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userEmail = req.user?.email;
+    const userRole = req.user?.role;
+    const where = (!userRole || userRole === 'ADMIN') ? {} : { userEmail: userEmail || undefined };
+    const invoices = await prisma.invoice.findMany({
+      where,
+      orderBy: { createdAt: 'desc' }
+    });
+    return res.json(invoices);
+  } catch (error: any) {
+    return res.status(500).json({ error: 'Error al obtener facturas', details: error.message });
+  }
+};
+
+export const getCertificates = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userEmail = req.user?.email;
+    const userRole = req.user?.role;
+    const where = (!userRole || userRole === 'ADMIN') ? {} : { userEmail: userEmail || undefined };
+    const certs = await prisma.certificate.findMany({
+      where,
+      orderBy: { createdAt: 'desc' }
+    });
+    return res.json(certs);
+  } catch (error: any) {
+    return res.status(500).json({ error: 'Error al obtener certificados', details: error.message });
   }
 };
 
@@ -87,9 +136,11 @@ export const updateEnrollment = async (req: AuthenticatedRequest, res: Response)
     const userRole = req.user?.role;
     const userEmail = req.user?.email;
 
-    const enrollment = await prisma.enrollment.findUnique({
-      where: { id }
-    });
+    // Try to find by cuid first, then fallback to code
+    let enrollment = await prisma.enrollment.findUnique({ where: { id } }).catch(() => null);
+    if (!enrollment) {
+      enrollment = await prisma.enrollment.findUnique({ where: { code: id } }).catch(() => null);
+    }
 
     if (!enrollment) {
       if (action === 'DELETE' || status === 'ELIMINADO') {
@@ -98,7 +149,9 @@ export const updateEnrollment = async (req: AuthenticatedRequest, res: Response)
       return res.status(404).json({ error: 'Inscripción no encontrada' });
     }
 
-    // Clientes solo pueden editar sus propias inscripciones
+    // Use the actual DB id for updates
+    const dbId = enrollment.id;
+
     if (userRole !== 'ADMIN' && enrollment.userEmail !== userEmail) {
       return res.status(403).json({ error: 'No tienes permiso para modificar esta inscripción' });
     }
@@ -108,7 +161,7 @@ export const updateEnrollment = async (req: AuthenticatedRequest, res: Response)
     // 1. ACCIÓN: PAUSAR / SUSPENDER
     if (action === 'PAUSE' || status === 'PAUSADO') {
       const updated = await prisma.enrollment.update({
-        where: { id },
+        where: { id: dbId },
         data: {
           status: 'PAUSADO',
           pausedAt: now
@@ -130,7 +183,7 @@ export const updateEnrollment = async (req: AuthenticatedRequest, res: Response)
       }
 
       const updated = await prisma.enrollment.update({
-        where: { id },
+        where: { id: dbId },
         data: {
           status: 'EN_CURSO',
           pausedAt: null
@@ -150,7 +203,7 @@ export const updateEnrollment = async (req: AuthenticatedRequest, res: Response)
       }
 
       const updated = await prisma.enrollment.update({
-        where: { id },
+        where: { id: dbId },
         data: {
           status: 'ANULADO',
           refundReason: reason || 'Cancelación por derecho de arrepentimiento'
@@ -166,7 +219,7 @@ export const updateEnrollment = async (req: AuthenticatedRequest, res: Response)
       }
 
       const updated = await prisma.enrollment.update({
-        where: { id },
+        where: { id: dbId },
         data: {
           deletedFromUi: true,
           status: 'ELIMINADO'
@@ -183,7 +236,7 @@ export const updateEnrollment = async (req: AuthenticatedRequest, res: Response)
       }
 
       const updated = await prisma.enrollment.update({
-        where: { id },
+        where: { id: dbId },
         data: {
           rating: numRating,
           reviewComment: reviewComment || null

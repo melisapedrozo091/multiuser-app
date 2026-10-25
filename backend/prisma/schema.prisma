@@ -24,6 +24,7 @@ model Product {
   id          Int      @id @default(autoincrement())
   name        String
   description String?  @db.Text
+  syllabus    String?  @db.Text
   price       Float
   stock       Int
   createdAt   DateTime @default(now())
@@ -60,4 +61,34 @@ model Enrollment {
   rating        Int?
   reviewComment String?   @db.Text
   deletedFromUi Boolean   @default(false)
+}
+
+model Invoice {
+  id            String   @id @default(cuid())
+  invoiceNumber String   @unique
+  enrollmentId  String?
+  userId        String
+  userEmail     String
+  clientName    String
+  courseName    String
+  amount        Float
+  currency      String   @default("USD")
+  paymentMethod String
+  date          String
+  status        String   @default("PAGADO")
+  createdAt     DateTime @default(now())
+}
+
+model Certificate {
+  id              String   @id @default(cuid())
+  certificateCode String   @unique
+  enrollmentId    String?
+  userId          String
+  userEmail       String
+  studentName     String
+  courseName      String
+  issueDate       String
+  grade           String   @default("Sobresaliente (10/10)")
+  status          String   @default("EMITIDO")
+  createdAt       DateTime @default(now())
 }

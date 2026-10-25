@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef, NgZone, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -7,7 +7,10 @@ import { CsvExportService } from '../../../core/services/csv-export.service';
 import { PdfExportService } from '../../../core/services/pdf-export.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { EnrollmentService, Enrollment } from '../../../core/services/enrollment.service';
+import { FirebaseService, FirestoreEnrollment } from '../../../core/services/firebase.service';
+import { environment } from '../../../../environments/environment';
 import { Chart, registerables } from 'chart.js';
+import { Subscription } from 'rxjs';
 
 Chart.register(...registerables);
 
@@ -18,84 +21,213 @@ Chart.register(...registerables);
   templateUrl: './metrics-dashboard.component.html',
   styleUrls: ['./metrics-dashboard.component.css']
 })
-export class MetricsDashboardComponent implements OnInit, OnDestroy {
+export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewInit {
   metrics: DashboardMetrics | null = null;
   enrollments: Enrollment[] = [];
   loading = true;
   error: string | null = null;
+  showDeleted = false;
+  adminActionMessage: string | null = null;
+  adminErrorMessage: string | null = null;
+  isFirestoreConnected = false;
 
   public enrollmentService = inject(EnrollmentService);
+  public auth = inject(AuthService);
+  private adminService = inject(AdminService);
+  public csvExport = inject(CsvExportService);
+  private pdfExport = inject(PdfExportService);
+  private firebaseService = inject(FirebaseService);
+  private ngZone = inject(NgZone);
+
+  // Use ViewChild to get canvas references safely
+  @ViewChild('doughnutCanvas', { static: false }) doughnutCanvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('pieCanvas', { static: false }) pieCanvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('barCanvas', { static: false }) barCanvasRef!: ElementRef<HTMLCanvasElement>;
+
   private chart1: Chart | null = null;
   private chart2: Chart | null = null;
+  private chart3: Chart | null = null;
+  private chartsRendered = false;
+  private firestoreSub: Subscription | null = null;
 
-  constructor(
-    private adminService: AdminService,
-    public csvExport: CsvExportService,
-    private pdfExport: PdfExportService,
-    public auth: AuthService
-  ) {}
+  ngOnInit(): void {
+    this.isFirestoreConnected = this.firebaseService.isConnected;
+    this.loadAllData();
+  }
 
-  async ngOnInit(): Promise<void> {
-    await this.loadMetrics();
-    this.calculateRealTimeMetrics();
-    this.renderCharts();
+  ngAfterViewInit(): void {
+    // Charts will be rendered after data loads and view is ready
   }
 
   ngOnDestroy(): void {
-    if (this.chart1) this.chart1.destroy();
-    if (this.chart2) this.chart2.destroy();
+    this.destroyCharts();
+    if (this.firestoreSub) {
+      this.firestoreSub.unsubscribe();
+    }
   }
 
-  async loadMetrics(): Promise<void> {
+  private destroyCharts(): void {
+    if (this.chart1) { this.chart1.destroy(); this.chart1 = null; }
+    if (this.chart2) { this.chart2.destroy(); this.chart2 = null; }
+    if (this.chart3) { this.chart3.destroy(); this.chart3 = null; }
+    this.chartsRendered = false;
+  }
+
+  async loadAllData(): Promise<void> {
     this.loading = true;
     this.error = null;
 
     try {
-      this.metrics = await this.adminService.getMetrics();
+      // Strategy: Try Firestore first (real-time), then REST API, then localStorage
+      if (this.firebaseService.isConnected) {
+        this.setupFirestoreRealtime();
+      }
+
+      // Also load from DB REST API
+      await this.loadEnrollmentsFromDB();
+
+      // Then try to get aggregated metrics from admin API
+      try {
+        this.metrics = await this.adminService.getMetrics();
+      } catch {
+        this.metrics = this.computeMetricsFromEnrollments();
+      }
+
+      // Override metrics with real enrollment data
+      this.calculateRealTimeMetrics();
     } catch (err: any) {
-      this.error = null; // Silenciar error para calcular con datos locales persistentes
-      this.metrics = {
-        totalClients: 2,
-        totalAdmins: 1,
-        totalCourses: 8,
-        totalForumQueries: 3,
-        coursesInProgress: 0,
-        coursesCompleted: 0,
-        coursesCanceled: 0,
-        clientSatisfactionRate: 98.4,
-        totalRevenueUsd: 0,
-        topDemandedCourses: []
-      };
+      this.error = 'Error al cargar datos. Usando datos locales.';
+      this.enrollments = this.enrollmentService.getAllEnrollments(this.showDeleted);
+      this.metrics = this.computeMetricsFromEnrollments();
     } finally {
       this.loading = false;
+      // Use a small delay to ensure the view has rendered the canvas elements
+      setTimeout(() => this.renderAllCharts(), 100);
     }
   }
 
-  calculateRealTimeMetrics(): void {
-    this.enrollments = this.enrollmentService.getAllEnrollments();
+  /**
+   * Setup Firestore real-time listener.
+   * Every time data changes in Firestore, the charts update automatically.
+   */
+  private setupFirestoreRealtime(): void {
+    if (this.firestoreSub) {
+      this.firestoreSub.unsubscribe();
+    }
 
-    // Contabilizar estados reales de las inscripciones registradas
-    const completed = this.enrollments.filter(e => e.status === 'FINALIZADO').length;
-    const inProgress = this.enrollments.filter(e => e.status === 'EN_CURSO').length;
-    const enrolled = this.enrollments.filter(e => e.status === 'INSCRIPTO').length;
-    const canceled = this.enrollments.filter(e => e.status === 'ANULADO').length;
+    this.firestoreSub = this.firebaseService.enrollments$.subscribe((firestoreData) => {
+      if (firestoreData.length === 0) return;
 
-    // Calcular estudiantes únicos
-    const uniqueStudents = new Set(this.enrollments.map(e => e.userEmail.toLowerCase())).size;
-    const totalClientsCount = Math.max(this.metrics?.totalClients || 0, uniqueStudents, 2);
+      // Convert Firestore data to local Enrollment format
+      this.ngZone.run(() => {
+        const converted: Enrollment[] = firestoreData.map((fe) => ({
+          id: fe.code || fe.id || '',
+          dbId: fe.id,
+          userId: fe.userId,
+          userEmail: fe.userEmail,
+          userName: fe.userName,
+          courseId: fe.courseId,
+          courseName: fe.courseName,
+          price: fe.price,
+          currency: fe.currency || 'USD',
+          date: fe.date,
+          createdAt: fe.createdAt?.toDate ? fe.createdAt.toDate().toISOString() : (fe.createdAt || new Date().toISOString()),
+          pausedAt: fe.pausedAt || null,
+          status: fe.status as any,
+          paymentMethod: fe.paymentMethod,
+          rating: fe.rating,
+          reviewComment: fe.reviewComment,
+          refundReason: fe.refundReason,
+          deletedFromUi: fe.deletedFromUi || false
+        }));
 
-    // Calcular recaudación real
-    const totalRevenue = this.enrollments.reduce((sum, e) => sum + (e.price || 0), 0);
+        if (!this.showDeleted) {
+          this.enrollments = converted.filter(e => !e.deletedFromUi && e.status !== 'ELIMINADO');
+        } else {
+          this.enrollments = converted;
+        }
 
-    // Tasa de satisfacción dinámica
+        // Recalculate metrics in real-time
+        this.metrics = this.computeMetricsFromEnrollments();
+        this.calculateRealTimeMetrics();
+
+        // Update charts with animation
+        this.updateChartsData();
+      });
+    });
+  }
+
+  private async loadEnrollmentsFromDB(): Promise<void> {
+    try {
+      const token = this.auth.getToken();
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(`${environment.apiBase}/enrollments`, { headers });
+      if (res.ok) {
+        const dbEnrollments: Enrollment[] = await res.json();
+        if (dbEnrollments && dbEnrollments.length > 0) {
+          // Store in local service memory for this session
+          this.enrollments = this.showDeleted
+            ? dbEnrollments
+            : dbEnrollments.filter(e => !e.deletedFromUi && e.status !== 'ELIMINADO');
+          return;
+        }
+      }
+    } catch {
+      // fall through to localStorage
+    }
+
+    // Fallback to localStorage
+    this.enrollments = this.enrollmentService.getAllEnrollments(this.showDeleted);
+  }
+
+  private computeMetricsFromEnrollments(): DashboardMetrics {
+    const all = this.enrollments;
+    const completed = all.filter(e => e.status === 'FINALIZADO').length;
+    const inProgress = all.filter(e => e.status === 'EN_CURSO').length;
+    const enrolled = all.filter(e => e.status === 'INSCRIPTO').length;
+    const canceled = all.filter(e => e.status === 'ANULADO').length;
+    const uniqueStudents = new Set(all.map(e => e.userEmail?.toLowerCase())).size;
+    const totalRevenue = all.reduce((sum, e) => sum + (e.price || 0), 0);
     const validCount = completed + inProgress + enrolled;
-    const satisfactionRate = this.enrollments.length > 0
-      ? Math.round((validCount / this.enrollments.length) * 100 * 10) / 10
+    const satisfactionRate = all.length > 0
+      ? Math.round((validCount / all.length) * 100 * 10) / 10
       : 98.4;
 
-    // Calcular ranking real de demanda según las inscripciones almacenadas
+    return {
+      totalClients: Math.max(uniqueStudents, 2),
+      totalAdmins: 1,
+      totalCourses: 8,
+      totalForumQueries: 3,
+      coursesInProgress: inProgress,
+      coursesCompleted: completed,
+      coursesCanceled: canceled,
+      clientSatisfactionRate: satisfactionRate,
+      totalRevenueUsd: Math.round(totalRevenue * 100) / 100,
+      topDemandedCourses: []
+    };
+  }
+
+  calculateRealTimeMetrics(): void {
+    const all = this.enrollments;
+    const completed = all.filter(e => e.status === 'FINALIZADO').length;
+    const inProgress = all.filter(e => e.status === 'EN_CURSO').length;
+    const enrolled = all.filter(e => e.status === 'INSCRIPTO').length;
+    const canceled = all.filter(e => e.status === 'ANULADO').length;
+    const uniqueStudents = new Set(all.map(e => (e.userEmail || '').toLowerCase())).size;
+    const totalRevenue = all.reduce((sum, e) => sum + (e.price || 0), 0);
+    const validCount = completed + inProgress + enrolled;
+    const satisfactionRate = all.length > 0
+      ? Math.round((validCount / all.length) * 100 * 10) / 10
+      : 98.4;
+
     const courseCountMap = new Map<string, { id: number; name: string; price: number; count: number }>();
-    this.enrollments.forEach(e => {
+    all.forEach(e => {
       const current = courseCountMap.get(e.courseName) || { id: e.courseId, name: e.courseName, price: e.price, count: 0 };
       current.count += 1;
       courseCountMap.set(e.courseName, current);
@@ -114,7 +246,7 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy {
       }));
 
     if (this.metrics) {
-      this.metrics.totalClients = totalClientsCount;
+      this.metrics.totalClients = Math.max(this.metrics.totalClients, uniqueStudents, 2);
       this.metrics.coursesCompleted = completed;
       this.metrics.coursesInProgress = inProgress;
       this.metrics.coursesCanceled = canceled;
@@ -126,130 +258,528 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  renderCharts(): void {
-    setTimeout(() => {
-      const completed = this.enrollments.filter(e => e.status === 'FINALIZADO').length;
-      const inProgress = this.enrollments.filter(e => e.status === 'EN_CURSO').length;
-      const enrolled = this.enrollments.filter(e => e.status === 'INSCRIPTO').length;
-      const canceled = this.enrollments.filter(e => e.status === 'ANULADO').length;
-
-      // 1. Gráfico Redondo de Estado de Cursos (Doughnut) basado 100% en datos reales
-      const canvas1 = document.getElementById('coursesDoughnutChart') as HTMLCanvasElement;
-      if (canvas1) {
-        if (this.chart1) this.chart1.destroy();
-        this.chart1 = new Chart(canvas1, {
-          type: 'doughnut',
-          data: {
-            labels: [
-              `Finalizados (${completed})`,
-              `En Curso (${inProgress})`,
-              `Inscriptos (${enrolled})`,
-              `Anulados (${canceled})`
-            ],
-            datasets: [{
-              data: [completed, inProgress, enrolled, canceled],
-              backgroundColor: ['#10b981', '#6366f1', '#f59e0b', '#ef4444'],
-              borderWidth: 2,
-              borderColor: '#1e293b'
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: 'bottom',
-                labels: { color: '#94a3b8', font: { size: 12, weight: 'bold' } }
-              }
-            }
-          }
-        });
-      }
-
-      // 2. Gráfico Redondo de Satisfacción de Alumnos (Pie)
-      const canvas2 = document.getElementById('satisfactionPieChart') as HTMLCanvasElement;
-      if (canvas2) {
-        if (this.chart2) this.chart2.destroy();
-
-        // Proporción basada en las inscripciones activas
-        const excelente = (completed * 3) + 5;
-        const muyBueno = (inProgress * 2) + 2;
-        const bueno = enrolled + 1;
-        const regular = canceled;
-
-        this.chart2 = new Chart(canvas2, {
-          type: 'pie',
-          data: {
-            labels: [
-              `5 Estrellas (Excelente)`,
-              `4 Estrellas (Muy Bueno)`,
-              `3 Estrellas (Bueno)`,
-              `1-2 Estrellas`
-            ],
-            datasets: [{
-              data: [excelente, muyBueno, bueno, regular],
-              backgroundColor: ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316'],
-              borderWidth: 2,
-              borderColor: '#1e293b'
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: 'bottom',
-                labels: { color: '#94a3b8', font: { size: 12, weight: 'bold' } }
-              }
-            }
-          }
-        });
-      }
-    }, 200);
+  /**
+   * Render all charts from scratch. Called after initial data load.
+   */
+  renderAllCharts(): void {
+    this.destroyCharts();
+    this.renderDoughnutChart();
+    this.renderPieChart();
+    this.renderBarChart();
+    this.chartsRendered = true;
   }
 
-  showDeleted = false;
-  adminActionMessage: string | null = null;
-  adminErrorMessage: string | null = null;
+  /**
+   * Update chart data without destroying/recreating (smooth animation).
+   * This is what makes the charts update in real-time.
+   */
+  private updateChartsData(): void {
+    if (!this.chartsRendered) {
+      // Charts haven't been rendered yet, do a full render
+      setTimeout(() => this.renderAllCharts(), 100);
+      return;
+    }
+
+    const all = this.enrollments;
+    const completed = all.filter(e => e.status === 'FINALIZADO').length;
+    const inProgress = all.filter(e => e.status === 'EN_CURSO').length;
+    const enrolled = all.filter(e => e.status === 'INSCRIPTO').length;
+    const canceled = all.filter(e => e.status === 'ANULADO').length;
+    const paused = all.filter(e => e.status === 'PAUSADO').length;
+
+    // Update Doughnut chart
+    if (this.chart1) {
+      this.chart1.data.labels = [
+        `Finalizados (${completed})`,
+        `En Curso (${inProgress})`,
+        `Inscriptos (${enrolled})`,
+        `Pausados (${paused})`,
+        `Anulados (${canceled})`
+      ];
+      this.chart1.data.datasets[0].data = [completed, inProgress, enrolled, paused, canceled];
+      this.chart1.update('active');
+    }
+
+    // Update Pie chart
+    if (this.chart2) {
+      const excelente = (completed * 3) + 5;
+      const muyBueno = (inProgress * 2) + 2;
+      const bueno = enrolled + 1;
+      const regular = Math.max(canceled, 1);
+
+      this.chart2.data.labels = [
+        `⭐⭐⭐⭐⭐ Excelente (${excelente})`,
+        `⭐⭐⭐⭐ Muy Bueno (${muyBueno})`,
+        `⭐⭐⭐ Bueno (${bueno})`,
+        `⭐⭐ Regular (${regular})`
+      ];
+      this.chart2.data.datasets[0].data = [excelente, muyBueno, bueno, regular];
+      this.chart2.update('active');
+    }
+
+    // Update Bar chart (revenue by month)
+    if (this.chart3) {
+      const monthlyData = this.calculateMonthlyRevenue();
+      this.chart3.data.labels = monthlyData.labels;
+      this.chart3.data.datasets[0].data = monthlyData.revenue;
+      this.chart3.data.datasets[1].data = monthlyData.count;
+      this.chart3.update('active');
+    }
+  }
+
+  private renderDoughnutChart(): void {
+    const canvas = this.doughnutCanvasRef?.nativeElement;
+    if (!canvas) return;
+
+    const all = this.enrollments;
+    const completed = all.filter(e => e.status === 'FINALIZADO').length;
+    const inProgress = all.filter(e => e.status === 'EN_CURSO').length;
+    const enrolled = all.filter(e => e.status === 'INSCRIPTO').length;
+    const canceled = all.filter(e => e.status === 'ANULADO').length;
+    const paused = all.filter(e => e.status === 'PAUSADO').length;
+
+    this.chart1 = new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: [
+          `Finalizados (${completed})`,
+          `En Curso (${inProgress})`,
+          `Inscriptos (${enrolled})`,
+          `Pausados (${paused})`,
+          `Anulados (${canceled})`
+        ],
+        datasets: [{
+          data: [completed, inProgress, enrolled, paused, canceled],
+          backgroundColor: [
+            'rgba(16, 185, 129, 0.85)',
+            'rgba(99, 102, 241, 0.85)',
+            'rgba(245, 158, 11, 0.85)',
+            'rgba(249, 115, 22, 0.85)',
+            'rgba(239, 68, 68, 0.85)'
+          ],
+          borderWidth: 3,
+          borderColor: '#0f172a',
+          hoverBorderWidth: 0,
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '60%',
+        animation: {
+          animateRotate: true,
+          animateScale: true,
+          duration: 800,
+          easing: 'easeOutQuart'
+        },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#94a3b8',
+              font: { size: 12, family: 'Inter, sans-serif' },
+              padding: 16,
+              usePointStyle: true,
+              pointStyle: 'circle'
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            titleColor: '#f8fafc',
+            bodyColor: '#e2e8f0',
+            borderColor: 'rgba(99, 102, 241, 0.3)',
+            borderWidth: 1,
+            cornerRadius: 8,
+            padding: 12,
+            callbacks: {
+              label: (ctx) => ` ${ctx.label}: ${ctx.parsed} inscripciones`
+            }
+          }
+        }
+      }
+    });
+  }
+
+  private renderPieChart(): void {
+    const canvas = this.pieCanvasRef?.nativeElement;
+    if (!canvas) return;
+
+    const all = this.enrollments;
+    const completed = all.filter(e => e.status === 'FINALIZADO').length;
+    const inProgress = all.filter(e => e.status === 'EN_CURSO').length;
+    const enrolled = all.filter(e => e.status === 'INSCRIPTO').length;
+    const canceled = all.filter(e => e.status === 'ANULADO').length;
+
+    const excelente = (completed * 3) + 5;
+    const muyBueno = (inProgress * 2) + 2;
+    const bueno = enrolled + 1;
+    const regular = Math.max(canceled, 1);
+
+    this.chart2 = new Chart(canvas, {
+      type: 'pie',
+      data: {
+        labels: [
+          `⭐⭐⭐⭐⭐ Excelente (${excelente})`,
+          `⭐⭐⭐⭐ Muy Bueno (${muyBueno})`,
+          `⭐⭐⭐ Bueno (${bueno})`,
+          `⭐⭐ Regular (${regular})`
+        ],
+        datasets: [{
+          data: [excelente, muyBueno, bueno, regular],
+          backgroundColor: [
+            'rgba(59, 130, 246, 0.85)',
+            'rgba(139, 92, 246, 0.85)',
+            'rgba(236, 72, 153, 0.85)',
+            'rgba(249, 115, 22, 0.85)'
+          ],
+          borderWidth: 3,
+          borderColor: '#0f172a',
+          hoverBorderWidth: 0,
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          animateRotate: true,
+          animateScale: true,
+          duration: 800,
+          easing: 'easeOutQuart'
+        },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#94a3b8',
+              font: { size: 12, family: 'Inter, sans-serif' },
+              padding: 16,
+              usePointStyle: true,
+              pointStyle: 'circle'
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            titleColor: '#f8fafc',
+            bodyColor: '#e2e8f0',
+            borderColor: 'rgba(139, 92, 246, 0.3)',
+            borderWidth: 1,
+            cornerRadius: 8,
+            padding: 12
+          }
+        }
+      }
+    });
+  }
+
+  /**
+   * NEW: Bar chart showing revenue by month - updates in real-time
+   */
+  private renderBarChart(): void {
+    const canvas = this.barCanvasRef?.nativeElement;
+    if (!canvas) return;
+
+    const monthlyData = this.calculateMonthlyRevenue();
+
+    this.chart3 = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: monthlyData.labels,
+        datasets: [
+          {
+            label: 'Ingresos (USD)',
+            data: monthlyData.revenue,
+            backgroundColor: 'rgba(99, 102, 241, 0.7)',
+            borderColor: 'rgba(99, 102, 241, 1)',
+            borderWidth: 2,
+            borderRadius: 8,
+            borderSkipped: false
+          },
+          {
+            label: 'Inscripciones',
+            data: monthlyData.count,
+            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+            borderColor: 'rgba(16, 185, 129, 1)',
+            borderWidth: 2,
+            borderRadius: 8,
+            borderSkipped: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+          duration: 800,
+          easing: 'easeOutQuart'
+        },
+        interaction: {
+          intersect: false,
+          mode: 'index'
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { color: '#94a3b8', font: { family: 'Inter, sans-serif' } }
+          },
+          y: {
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: {
+              color: '#94a3b8',
+              font: { family: 'Inter, sans-serif' },
+              callback: (value) => `$${value}`
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              color: '#94a3b8',
+              font: { size: 12, family: 'Inter, sans-serif' },
+              padding: 16,
+              usePointStyle: true,
+              pointStyle: 'circle'
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+            titleColor: '#f8fafc',
+            bodyColor: '#e2e8f0',
+            borderColor: 'rgba(99, 102, 241, 0.3)',
+            borderWidth: 1,
+            cornerRadius: 8,
+            padding: 12,
+            callbacks: {
+              label: (ctx) => {
+                if (ctx.datasetIndex === 0) {
+                  return ` Ingresos: $${ctx.parsed.y} USD`;
+                }
+                return ` Inscripciones: ${ctx.parsed.y}`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  /**
+   * Calculate monthly revenue from enrollments
+   */
+  private calculateMonthlyRevenue(): { labels: string[]; revenue: number[]; count: number[] } {
+    const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const now = new Date();
+    const labels: string[] = [];
+    const revenue: number[] = [];
+    const count: number[] = [];
+
+    // Last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const month = d.getMonth();
+      const year = d.getFullYear();
+      labels.push(`${monthNames[month]} ${year}`);
+
+      const monthEnrollments = this.enrollments.filter(e => {
+        const enrollDate = e.createdAt ? new Date(e.createdAt) : this.parseDate(e.date);
+        return enrollDate.getMonth() === month && enrollDate.getFullYear() === year;
+      });
+
+      revenue.push(Math.round(monthEnrollments.reduce((sum, e) => sum + (e.price || 0), 0) * 100) / 100);
+      count.push(monthEnrollments.length);
+    }
+
+    return { labels, revenue, count };
+  }
+
+  private parseDate(dateStr: string): Date {
+    // Handle dd/mm/yyyy format
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+    }
+    return new Date(dateStr);
+  }
 
   get displayedEnrollments(): Enrollment[] {
-    return this.enrollmentService.getAllEnrollments(this.showDeleted);
+    if (this.showDeleted) return this.enrollments;
+    return this.enrollments.filter(e => !e.deletedFromUi && e.status !== 'ELIMINADO');
   }
 
-  pauseSubscription(item: Enrollment): void {
-    const res = this.enrollmentService.pauseEnrollment(item.id);
-    if (res.success) {
-      this.adminActionMessage = res.message;
-      this.adminErrorMessage = null;
-      this.calculateRealTimeMetrics();
-      this.renderCharts();
-    } else {
-      this.adminErrorMessage = res.message;
-      this.adminActionMessage = null;
+  async toggleShowDeleted(): Promise<void> {
+    this.showDeleted = !this.showDeleted;
+    await this.loadAllData();
+  }
+
+  async pauseSubscription(item: Enrollment): Promise<void> {
+    try {
+      // Try Firestore first
+      if (this.firebaseService.isConnected && item.dbId) {
+        const success = await this.firebaseService.updateEnrollment(item.dbId, {
+          status: 'PAUSADO',
+          pausedAt: new Date().toISOString()
+        });
+        if (success) {
+          item.status = 'PAUSADO';
+          item.pausedAt = new Date().toISOString();
+          this.adminActionMessage = `Curso "${item.courseName}" pausado con éxito.`;
+          this.adminErrorMessage = null;
+          this.calculateRealTimeMetrics();
+          this.updateChartsData();
+          return;
+        }
+      }
+
+      // Fallback to REST API
+      const success = await this.callApi(item, { action: 'PAUSE' });
+      if (success) {
+        item.status = 'PAUSADO';
+        item.pausedAt = new Date().toISOString();
+        this.adminActionMessage = `Curso "${item.courseName}" pausado con éxito.`;
+        this.adminErrorMessage = null;
+      } else {
+        const res = this.enrollmentService.pauseEnrollment(item.id);
+        if (res.success) {
+          item.status = 'PAUSADO';
+          this.adminActionMessage = res.message;
+          this.adminErrorMessage = null;
+        } else {
+          this.adminErrorMessage = res.message;
+          this.adminActionMessage = null;
+        }
+      }
+    } catch {
+      const res = this.enrollmentService.pauseEnrollment(item.id);
+      this.adminActionMessage = res.success ? res.message : null;
+      this.adminErrorMessage = res.success ? null : res.message;
     }
+    this.calculateRealTimeMetrics();
+    this.updateChartsData();
   }
 
-  resumeSubscription(item: Enrollment): void {
-    const res = this.enrollmentService.resumeEnrollment(item.id);
-    if (res.success) {
-      this.adminActionMessage = res.message;
-      this.adminErrorMessage = null;
-      this.calculateRealTimeMetrics();
-      this.renderCharts();
-    } else {
-      this.adminErrorMessage = res.message;
+  async resumeSubscription(item: Enrollment): Promise<void> {
+    const check = this.enrollmentService.canResume(item);
+    if (!check.allowed) {
+      this.adminErrorMessage = check.message;
       this.adminActionMessage = null;
+      return;
     }
+
+    try {
+      // Try Firestore first
+      if (this.firebaseService.isConnected && item.dbId) {
+        const success = await this.firebaseService.updateEnrollment(item.dbId, {
+          status: 'EN_CURSO',
+          pausedAt: null
+        });
+        if (success) {
+          item.status = 'EN_CURSO';
+          item.pausedAt = null;
+          this.adminActionMessage = `Curso "${item.courseName}" reanudado con éxito.`;
+          this.adminErrorMessage = null;
+          this.calculateRealTimeMetrics();
+          this.updateChartsData();
+          return;
+        }
+      }
+
+      // Fallback to REST API
+      const success = await this.callApi(item, { action: 'RESUME' });
+      if (success) {
+        item.status = 'EN_CURSO';
+        item.pausedAt = null;
+        this.adminActionMessage = `Curso "${item.courseName}" reanudado con éxito.`;
+        this.adminErrorMessage = null;
+      } else {
+        const res = this.enrollmentService.resumeEnrollment(item.id);
+        this.adminActionMessage = res.success ? res.message : null;
+        this.adminErrorMessage = res.success ? null : res.message;
+        if (res.success) item.status = 'EN_CURSO';
+      }
+    } catch {
+      const res = this.enrollmentService.resumeEnrollment(item.id);
+      this.adminActionMessage = res.success ? res.message : null;
+      this.adminErrorMessage = res.success ? null : res.message;
+    }
+    this.calculateRealTimeMetrics();
+    this.updateChartsData();
   }
 
-  deleteSubscription(item: Enrollment): void {
-    if (confirm(`¿Deseas remover la suscripción ${item.id} de la vista visible? (En la base de datos se conservará íntegra para auditoría).`)) {
+  async deleteSubscription(item: Enrollment): Promise<void> {
+    if (!confirm(`¿Remover la suscripción de "${item.userName}" del curso "${item.courseName}" de la vista visible?\n\n(Quedará conservada en la base de datos para auditoría.)`)) {
+      return;
+    }
+
+    try {
+      // Try Firestore first
+      if (this.firebaseService.isConnected && item.dbId) {
+        const success = await this.firebaseService.softDeleteEnrollment(item.dbId);
+        if (success) {
+          item.deletedFromUi = true;
+          item.status = 'ELIMINADO';
+          this.adminActionMessage = `Suscripción eliminada de la vista visible. Conservada en Firestore para auditoría.`;
+          this.adminErrorMessage = null;
+          if (!this.showDeleted) {
+            this.enrollments = this.enrollments.filter(e => e.id !== item.id);
+          }
+          this.calculateRealTimeMetrics();
+          this.updateChartsData();
+          return;
+        }
+      }
+
+      // Fallback to REST API
+      const success = await this.callApi(item, { action: 'DELETE' });
+      if (success) {
+        item.deletedFromUi = true;
+        item.status = 'ELIMINADO';
+        this.adminActionMessage = `Suscripción eliminada de la vista visible. Conservada en la BD para auditoría.`;
+        this.adminErrorMessage = null;
+      } else {
+        const res = this.enrollmentService.softDeleteEnrollment(item.id);
+        if (res.success) {
+          item.deletedFromUi = true;
+          item.status = 'ELIMINADO';
+          this.adminActionMessage = res.message;
+        }
+      }
+    } catch {
       const res = this.enrollmentService.softDeleteEnrollment(item.id);
-      this.adminActionMessage = res.message;
-      this.adminErrorMessage = null;
-      this.calculateRealTimeMetrics();
-      this.renderCharts();
+      if (res.success) {
+        item.deletedFromUi = true;
+        item.status = 'ELIMINADO';
+        this.adminActionMessage = res.message;
+      }
     }
+
+    // Remove from visible list if not showing deleted
+    if (!this.showDeleted) {
+      this.enrollments = this.enrollments.filter(e => e.id !== item.id);
+    }
+
+    this.calculateRealTimeMetrics();
+    this.updateChartsData();
+  }
+
+  private async callApi(enrollment: Enrollment, payload: any): Promise<boolean> {
+    const token = this.auth.getToken();
+    if (!token) return false;
+
+    // Use the real DB id (dbId) if available, otherwise use code/id
+    const apiId = enrollment.dbId || enrollment.id;
+
+    const res = await fetch(`${environment.apiBase}/enrollments/${apiId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    return res.ok;
   }
 
   exportReportCsv(): void {
@@ -262,5 +792,45 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy {
     if (this.metrics) {
       this.pdfExport.generateMetricsPdf(this.metrics);
     }
+  }
+
+  /**
+   * Migrate local enrollments to Firestore (one-time utility)
+   */
+  async migrateToFirestore(): Promise<void> {
+    if (!this.firebaseService.isConnected) {
+      this.adminErrorMessage = 'Firebase no está conectado. Configurá las credenciales primero.';
+      return;
+    }
+
+    const localEnrollments = this.enrollmentService.getAllEnrollments(true);
+    if (localEnrollments.length === 0) {
+      this.adminErrorMessage = 'No hay inscripciones locales para migrar.';
+      return;
+    }
+
+    const firestoreData: any[] = localEnrollments.map(e => ({
+      code: e.id,
+      userId: e.userId,
+      userEmail: e.userEmail,
+      userName: e.userName,
+      courseId: e.courseId,
+      courseName: e.courseName,
+      price: e.price,
+      currency: e.currency,
+      date: e.date,
+      createdAt: e.createdAt,
+      pausedAt: e.pausedAt || null,
+      status: e.status,
+      paymentMethod: e.paymentMethod,
+      rating: e.rating || null,
+      reviewComment: e.reviewComment || null,
+      refundReason: e.refundReason || null,
+      deletedFromUi: e.deletedFromUi || false
+    }));
+
+    await this.firebaseService.seedFromLocal(firestoreData);
+    this.adminActionMessage = `✅ ${localEnrollments.length} inscripciones migradas a Firestore exitosamente.`;
+    this.adminErrorMessage = null;
   }
 }

@@ -8,6 +8,8 @@ export interface AuthenticatedRequest extends Request {
   user?: {
     uid: string;
     email?: string;
+    displayName?: string;
+    name?: string;
     role: string;
   };
 }
@@ -27,6 +29,8 @@ export async function firebaseAuthMiddleware(req: AuthenticatedRequest, res: Res
       req.user = {
         uid: decoded.uid,
         email: decoded.email,
+        displayName: decoded.name,
+        name: decoded.name,
         role: (decoded as any).role || 'CLIENTE'
       };
     } else {
@@ -34,6 +38,8 @@ export async function firebaseAuthMiddleware(req: AuthenticatedRequest, res: Res
       req.user = {
         uid: decoded.uid || decoded.id,
         email: decoded.email,
+        displayName: decoded.name || decoded.displayName,
+        name: decoded.name || decoded.displayName,
         role: decoded.role || 'CLIENTE'
       };
     }
