@@ -2,10 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ChatMessage, CourseReview, Product } from '../../../core/models/app-models';
+import { ChatMessage, CourseReview } from '../../../core/models/app-models';
 import { ChatService } from '../../../core/services/chat.service';
 import { ReviewService } from '../../../core/services/review.service';
-import { ProductService } from '../../../core/services/product.service';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -18,37 +17,23 @@ import { AuthService } from '../../../core/services/auth.service';
 export class ChatRoomComponent implements OnInit {
   messages: ChatMessage[] = [];
   reviews: CourseReview[] = [];
-  availableCourses: Product[] = [];
 
   newMessage = '';
   loading = false;
   sending = false;
 
-  // Active view tab
-  activeTab: 'reviews' | 'chat' | 'all' = 'reviews';
   selectedCourseFilter = 'TODOS';
-
-  // Review modal inside the forum
-  showReviewModal = false;
-  selectedCourseId: number | null = null;
-  newRating = 5;
-  newReviewComment = '';
-  savingReview = false;
-  reviewFeedback: string | null = null;
-  reviewError: string | null = null;
 
   constructor(
     private chatService: ChatService,
     private reviewService: ReviewService,
-    private productService: ProductService,
     public auth: AuthService
   ) {}
 
   async ngOnInit(): Promise<void> {
     await Promise.all([
       this.loadMessages(),
-      this.loadReviews(),
-      this.loadCourses()
+      this.loadReviews()
     ]);
   }
 
@@ -72,26 +57,6 @@ export class ChatRoomComponent implements OnInit {
       this.reviews = await this.reviewService.getReviews();
     } catch (err) {
       console.error('Error al cargar reseñas:', err);
-    }
-  }
-
-  async loadCourses(): Promise<void> {
-    try {
-      this.availableCourses = await this.productService.getAll();
-      if (this.availableCourses.length > 0 && !this.selectedCourseId) {
-        this.selectedCourseId = this.availableCourses[0].id;
-      }
-    } catch (err) {
-      // Fallback course list
-      this.availableCourses = [
-        { id: 1, name: 'Curso Completo de Desarrollo Web Fullstack', price: 99.99, stock: 50 },
-        { id: 2, name: 'Python para Ciencia de Datos e Inteligencia Artificial', price: 129.99, stock: 40 },
-        { id: 3, name: 'Diseño UX/UI & Prototipado con Figma Avanzado', price: 79.99, stock: 35 },
-        { id: 4, name: 'DevOps: Docker, Kubernetes & CI/CD Pipelines', price: 149.99, stock: 25 },
-        { id: 5, name: 'Arquitectura Cloud con AWS & Microservicios', price: 179.99, stock: 30 },
-        { id: 6, name: 'Ciberseguridad Ofensiva & Hacking Ético', price: 199.99, stock: 20 }
-      ];
-      this.selectedCourseId = 1;
     }
   }
 
@@ -161,69 +126,5 @@ export class ChatRoomComponent implements OnInit {
       this.sending = false;
     }
     setTimeout(() => this.scrollToBottom(), 50);
-  }
-
-  // --- MODAL DE PUBLICACIÓN DE RESEÑA DESDE EL FORO ---
-  openReviewModal(): void {
-    this.newRating = 5;
-    this.newReviewComment = '';
-    this.reviewFeedback = null;
-    this.reviewError = null;
-    if (this.availableCourses.length > 0 && !this.selectedCourseId) {
-      this.selectedCourseId = this.availableCourses[0].id;
-    }
-    this.showReviewModal = true;
-  }
-
-  closeReviewModal(): void {
-    this.showReviewModal = false;
-  }
-
-  setRating(stars: number): void {
-    this.newRating = stars;
-  }
-
-  async submitReview(): Promise<void> {
-    if (!this.selectedCourseId) {
-      this.reviewError = 'Por favor selecciona un curso para calificar.';
-      return;
-    }
-
-    if (!this.newReviewComment.trim()) {
-      this.reviewError = 'Por favor ingresa un comentario sobre tu experiencia con el curso.';
-      return;
-    }
-
-    const course = this.availableCourses.find(c => c.id === Number(this.selectedCourseId));
-    const courseName = course ? course.name : 'Curso de Especialización';
-
-    this.savingReview = true;
-    this.reviewError = null;
-
-    try {
-      const saved = await this.reviewService.createReview({
-        courseId: Number(this.selectedCourseId),
-        courseName,
-        rating: this.newRating,
-        comment: this.newReviewComment.trim()
-      });
-
-      // Update reviews list locally
-      const existingIdx = this.reviews.findIndex(r => r.courseId === saved.courseId && r.userEmail === saved.userEmail);
-      if (existingIdx !== -1) {
-        this.reviews[existingIdx] = saved;
-      } else {
-        this.reviews.unshift(saved);
-      }
-
-      this.reviewFeedback = '¡Tu reseña se guardó correctamente en la base de datos MySQL y ya está publicada en el foro!';
-      setTimeout(() => {
-        this.closeReviewModal();
-      }, 1500);
-    } catch (err: any) {
-      this.reviewError = err.message || 'Error al guardar la reseña.';
-    } finally {
-      this.savingReview = false;
-    }
   }
 }
