@@ -9,32 +9,23 @@ Aplicación web full-stack que desarrollé con una arquitectura robusta, utiliza
 * **Autenticación y Tiempo Real:** Firebase Auth & Firestore / REST API.
 * **Control de Versiones:** Git con estrategia de ramas (`main`, `develop`, `feature/*`).
 
-## ⚡️ Guía de Puesta en Marcha
+### ⚡ Inicio Rápido (1 solo clic en Windows)
+Haz doble clic en el archivo `iniciar-proyecto.bat` en la raíz del proyecto para abrir automáticamente el Backend y el Frontend.
 
-### 1️⃣ Configuración del Backend
-
+### 1️⃣ Inicio Manual del Backend
 ```bash
 cd backend
-npm install
-cp .env.example .env
-# Credenciales de la base de datos y variables de entorno en el archivo .env
-npx prisma generate
-npx prisma migrate dev --name init
 npm run dev
-
 ```
 
-### 2️⃣ Configuración del Frontend
-
+### 2️⃣ Inicio Manual del Frontend
 ```bash
 cd frontend
-npm install
 npm start
-
 ```
 
-Frontend disponible en `http://localhost:4200`.
-Backend disponible en `http://localhost:3000`.
+* Frontend disponible en: `http://localhost:4200`
+* Backend disponible en: `http://localhost:3000`
 
 ---
 
