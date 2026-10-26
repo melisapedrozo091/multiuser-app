@@ -2,6 +2,7 @@ import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { initializeApp, FirebaseApp } from 'firebase/app';
+import { getAnalytics, Analytics, isSupported } from 'firebase/analytics';
 import {
   getFirestore,
   Firestore,
@@ -43,6 +44,7 @@ export interface FirestoreEnrollment {
 export class FirebaseService implements OnDestroy {
   private app: FirebaseApp | null = null;
   private db: Firestore | null = null;
+  private analytics: Analytics | null = null;
   private unsubscribeEnrollments: Unsubscribe | null = null;
 
   private enrollmentsSubject = new BehaviorSubject<FirestoreEnrollment[]>([]);
@@ -75,6 +77,14 @@ export class FirebaseService implements OnDestroy {
       this.db = getFirestore(this.app);
       this._isConnected = true;
       console.log('✅ Firebase Firestore conectado correctamente.');
+
+      // Inicializar Firebase Analytics si el entorno del navegador lo soporta
+      isSupported().then((supported) => {
+        if (supported && this.app) {
+          this.analytics = getAnalytics(this.app);
+          console.log('✅ Firebase Analytics inicializado correctamente.');
+        }
+      }).catch(() => {});
 
       // Start real-time listener
       this.listenToEnrollments();
