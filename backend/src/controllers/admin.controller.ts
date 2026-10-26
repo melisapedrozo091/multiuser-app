@@ -80,7 +80,12 @@ export const getDashboardMetrics = async (req: AuthenticatedRequest, res: Respon
     const coursesCanceled = enrollments.filter(e => e.status === 'ANULADO').length;
     const coursesPaused = enrollments.filter(e => e.status === 'PAUSADO').length;
     const coursesEnrolled = enrollments.filter(e => e.status === 'INSCRIPTO').length;
-    const totalRevenueUsd = enrollments.reduce((sum, e) => sum + e.price, 0);
+    const totalRevenueUsd = enrollments
+      .filter(e => (e.currency || 'USD').toUpperCase() === 'USD')
+      .reduce((sum, e) => sum + e.price, 0);
+    const totalRevenueArs = enrollments
+      .filter(e => (e.currency || '').toUpperCase() === 'ARS')
+      .reduce((sum, e) => sum + e.price, 0);
 
     // Top demanded courses by enrollment count
     const courseCountMap = new Map<string, { id: number; name: string; price: number; count: number }>();
@@ -143,6 +148,7 @@ export const getDashboardMetrics = async (req: AuthenticatedRequest, res: Respon
       coursesEnrolled,
       clientSatisfactionRate,
       totalRevenueUsd: Math.round(totalRevenueUsd * 100) / 100,
+      totalRevenueArs: Math.round(totalRevenueArs * 100) / 100,
       topDemandedCourses
     });
   } catch (error: any) {

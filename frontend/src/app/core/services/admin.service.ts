@@ -24,6 +24,7 @@ export interface DashboardMetrics {
   coursesEnrolled?: number;
   clientSatisfactionRate: number;
   totalRevenueUsd: number;
+  totalRevenueArs?: number;
   topDemandedCourses: {
     id: number;
     name: string;

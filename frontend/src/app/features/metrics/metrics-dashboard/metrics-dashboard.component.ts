@@ -199,7 +199,12 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
     const canceled = all.filter(e => e.status === 'ANULADO').length;
     const paused = all.filter(e => e.status === 'PAUSADO').length;
     const uniqueStudents = new Set(all.map(e => e.userEmail?.toLowerCase())).size;
-    const totalRevenue = all.reduce((sum, e) => sum + (e.price || 0), 0);
+    const totalRevenueUsd = all
+      .filter(e => (e.currency || 'USD').toUpperCase() === 'USD')
+      .reduce((sum, e) => sum + (e.price || 0), 0);
+    const totalRevenueArs = all
+      .filter(e => (e.currency || '').toUpperCase() === 'ARS')
+      .reduce((sum, e) => sum + (e.price || 0), 0);
 
     // Calcular satisfacción real desde las reseñas cargadas
     const revCount = this.reviews.length;
@@ -211,8 +216,8 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
     return {
       totalClients: Math.max(uniqueStudents, 1),
       totalAdmins: 1,
-      totalCourses: 8,
-      totalForumQueries: 3,
+      totalCourses: 12,
+      totalForumQueries: 6,
       totalReviews: revCount,
       averageRating: Number(avgRating.toFixed(1)),
       coursesInProgress: inProgress,
@@ -221,7 +226,8 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
       coursesPaused: paused,
       coursesEnrolled: enrolled,
       clientSatisfactionRate: satisfactionRate,
-      totalRevenueUsd: Math.round(totalRevenue * 100) / 100,
+      totalRevenueUsd: Math.round(totalRevenueUsd * 100) / 100,
+      totalRevenueArs: Math.round(totalRevenueArs * 100) / 100,
       topDemandedCourses: []
     };
   }
@@ -234,7 +240,12 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
     const canceled = all.filter(e => e.status === 'ANULADO').length;
     const paused = all.filter(e => e.status === 'PAUSADO').length;
     const uniqueStudents = new Set(all.map(e => (e.userEmail || '').toLowerCase())).size;
-    const totalRevenue = all.reduce((sum, e) => sum + (e.price || 0), 0);
+    const totalRevenueUsd = all
+      .filter(e => (e.currency || 'USD').toUpperCase() === 'USD')
+      .reduce((sum, e) => sum + (e.price || 0), 0);
+    const totalRevenueArs = all
+      .filter(e => (e.currency || '').toUpperCase() === 'ARS')
+      .reduce((sum, e) => sum + (e.price || 0), 0);
 
     // Calcular satisfacción real desde las reseñas reales en la BD
     const revCount = this.reviews.length;
@@ -278,7 +289,8 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
       this.metrics.totalReviews = revCount;
       this.metrics.averageRating = Number(avgRating.toFixed(1));
       this.metrics.clientSatisfactionRate = satisfactionRate;
-      this.metrics.totalRevenueUsd = Math.round(totalRevenue * 100) / 100;
+      this.metrics.totalRevenueUsd = Math.round(totalRevenueUsd * 100) / 100;
+      this.metrics.totalRevenueArs = Math.round(totalRevenueArs * 100) / 100;
       if (topDemanded.length > 0) {
         this.metrics.topDemandedCourses = topDemanded;
       }
@@ -350,8 +362,13 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
     if (this.chart3) {
       const monthlyData = this.calculateMonthlyRevenue();
       this.chart3.data.labels = monthlyData.labels;
-      this.chart3.data.datasets[0].data = monthlyData.revenue;
-      this.chart3.data.datasets[1].data = monthlyData.count;
+      this.chart3.data.datasets[0].data = monthlyData.revenueUsd;
+      if (this.chart3.data.datasets[1]) {
+        this.chart3.data.datasets[1].data = monthlyData.revenueArs;
+      }
+      if (this.chart3.data.datasets[2]) {
+        this.chart3.data.datasets[2].data = monthlyData.count;
+      }
       this.chart3.update('active');
     }
   }
@@ -515,23 +532,33 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
         labels: monthlyData.labels,
         datasets: [
           {
-            label: 'Ingresos (USD)',
-            data: monthlyData.revenue,
-            yAxisID: 'y',
-            backgroundColor: 'rgba(99, 102, 241, 0.7)',
+            label: 'Ingresos USD ($)',
+            data: monthlyData.revenueUsd,
+            yAxisID: 'yUsd',
+            backgroundColor: 'rgba(99, 102, 241, 0.8)',
             borderColor: 'rgba(99, 102, 241, 1)',
             borderWidth: 2,
-            borderRadius: 8,
+            borderRadius: 6,
             borderSkipped: false
           },
           {
-            label: 'Inscripciones',
+            label: 'Ingresos ARS ($)',
+            data: monthlyData.revenueArs,
+            yAxisID: 'yArs',
+            backgroundColor: 'rgba(56, 189, 248, 0.8)',
+            borderColor: 'rgba(56, 189, 248, 1)',
+            borderWidth: 2,
+            borderRadius: 6,
+            borderSkipped: false
+          },
+          {
+            label: 'Cant. Inscripciones',
             data: monthlyData.count,
-            yAxisID: 'y1',
-            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+            yAxisID: 'yCount',
+            backgroundColor: 'rgba(16, 185, 129, 0.85)',
             borderColor: 'rgba(16, 185, 129, 1)',
             borderWidth: 2,
-            borderRadius: 8,
+            borderRadius: 6,
             borderSkipped: false
           }
         ]
@@ -552,7 +579,7 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
             grid: { color: 'rgba(255,255,255,0.05)' },
             ticks: { color: '#94a3b8', font: { family: 'Inter, sans-serif' } }
           },
-          y: {
+          yUsd: {
             type: 'linear',
             display: true,
             position: 'left',
@@ -560,16 +587,16 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
             ticks: {
               color: '#818cf8',
               font: { family: 'Inter, sans-serif' },
-              callback: (value) => `$${value}`
+              callback: (value) => `$${value} USD`
             },
             title: {
               display: true,
-              text: 'Ingresos (USD)',
+              text: 'USD',
               color: '#818cf8',
               font: { family: 'Inter, sans-serif', size: 11, weight: 'bold' }
             }
           },
-          y1: {
+          yCount: {
             type: 'linear',
             display: true,
             position: 'right',
@@ -582,10 +609,15 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
             },
             title: {
               display: true,
-              text: 'Cant. Inscripciones',
+              text: 'Inscripciones',
               color: '#34d399',
               font: { family: 'Inter, sans-serif', size: 11, weight: 'bold' }
             }
+          },
+          yArs: {
+            type: 'linear',
+            display: false, // Eje secundario para evitar saturar el gráfico
+            grid: { drawOnChartArea: false }
           }
         },
         plugins: {
@@ -610,9 +642,11 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
             callbacks: {
               label: (ctx) => {
                 if (ctx.datasetIndex === 0) {
-                  return ` Ingresos: $${ctx.parsed.y} USD`;
+                  return ` Ingresos USD: $ ${Number(ctx.parsed.y).toLocaleString('es-AR')} USD`;
+                } else if (ctx.datasetIndex === 1) {
+                  return ` Ingresos Pesos: $ ${Number(ctx.parsed.y).toLocaleString('es-AR')} ARS`;
                 }
-                return ` Inscripciones: ${ctx.parsed.y}`;
+                return ` Cantidad de Inscripciones: ${ctx.parsed.y}`;
               }
             }
           }
@@ -622,13 +656,14 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
   }
 
   /**
-   * Calculate monthly revenue from enrollments
+   * Calculate monthly revenue in USD and ARS from enrollments
    */
-  private calculateMonthlyRevenue(): { labels: string[]; revenue: number[]; count: number[] } {
+  private calculateMonthlyRevenue(): { labels: string[]; revenueUsd: number[]; revenueArs: number[]; count: number[] } {
     const monthNames = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
     const now = new Date();
     const labels: string[] = [];
-    const revenue: number[] = [];
+    const revenueUsd: number[] = [];
+    const revenueArs: number[] = [];
     const count: number[] = [];
 
     // Last 6 months
@@ -652,11 +687,20 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
         return enrollDate.getMonth() === month && enrollDate.getFullYear() === year;
       });
 
-      revenue.push(Math.round(monthEnrollments.reduce((sum, e) => sum + (e.price || 0), 0) * 100) / 100);
+      const usdSum = monthEnrollments
+        .filter(e => (e.currency || 'USD').toUpperCase() === 'USD')
+        .reduce((sum, e) => sum + (e.price || 0), 0);
+
+      const arsSum = monthEnrollments
+        .filter(e => (e.currency || '').toUpperCase() === 'ARS')
+        .reduce((sum, e) => sum + (e.price || 0), 0);
+
+      revenueUsd.push(Math.round(usdSum * 100) / 100);
+      revenueArs.push(Math.round(arsSum));
       count.push(monthEnrollments.length);
     }
 
-    return { labels, revenue, count };
+    return { labels, revenueUsd, revenueArs, count };
   }
 
   private parseDate(dateStr: string): Date {
