@@ -191,36 +191,36 @@
                 <div style="font-size: 0.78rem; color: #94a3b8;">{{ item.userEmail }}</div>
               </td>
               <td style="padding: 14px; max-width: 240px; font-weight: 600;">{{ item.courseName }}</td>
-              <td style="padding: 14px; color: #94a3b8;">{{ item.date }}</td>
-              <td style="padding: 14px; font-weight: 700; color: #10b981;">$ {{ item.price }} {{ item.currency }}</td>
-              <td style="padding: 14px;">
-                <span *ngIf="item.status === 'FINALIZADO'" style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(16, 185, 129, 0.3);">
-                  <i class="fa-solid fa-check me-1"></i> Finalizado
+              <td style="padding: 14px; color: #94a3b8; white-space: nowrap;">{{ item.date }}</td>
+              <td style="padding: 14px; font-weight: 700; color: #10b981; white-space: nowrap;">$ {{ item.price }} {{ item.currency }}</td>
+              <td style="padding: 14px; white-space: nowrap;">
+                <span *ngIf="item.status === 'FINALIZADO'" style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(16, 185, 129, 0.3); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;">
+                  <i class="fa-solid fa-check"></i> Finalizado
                 </span>
-                <span *ngIf="item.status === 'EN_CURSO'" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(99, 102, 241, 0.3);">
-                  <i class="fa-solid fa-graduation-cap me-1"></i> En Curso
+                <span *ngIf="item.status === 'EN_CURSO'" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(99, 102, 241, 0.3); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;">
+                  <i class="fa-solid fa-graduation-cap"></i> En Curso
                 </span>
-                <span *ngIf="item.status === 'INSCRIPTO'" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(245, 158, 11, 0.3);">
-                  <i class="fa-solid fa-clock-rotate-left me-1"></i> Inscripto
+                <span *ngIf="item.status === 'INSCRIPTO'" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(245, 158, 11, 0.3); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;">
+                  <i class="fa-solid fa-clock-rotate-left"></i> Inscripto
                 </span>
-                <span *ngIf="item.status === 'PAUSADO'" style="background: rgba(249, 115, 22, 0.15); color: #fb923c; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(249, 115, 22, 0.3);">
-                  <i class="fa-solid fa-pause me-1"></i> Pausado
+                <span *ngIf="item.status === 'PAUSADO'" style="background: rgba(249, 115, 22, 0.15); color: #fb923c; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(249, 115, 22, 0.3); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;">
+                  <i class="fa-solid fa-pause"></i> Pausado
                 </span>
-                <span *ngIf="item.status === 'ANULADO'" style="background: rgba(239, 68, 68, 0.15); color: #f87171; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(239, 68, 68, 0.3);">
-                  <i class="fa-solid fa-xmark me-1"></i> Reembolsado
+                <span *ngIf="item.status === 'ANULADO'" style="background: rgba(239, 68, 68, 0.15); color: #f87171; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(239, 68, 68, 0.3); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;">
+                  <i class="fa-solid fa-xmark"></i> Reembolsado
                 </span>
-                <span *ngIf="item.status === 'ELIMINADO' || item.deletedFromUi" style="background: rgba(100, 116, 139, 0.2); color: #94a3b8; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(100, 116, 139, 0.3);">
-                  <i class="fa-solid fa-trash me-1"></i> Oculto / Papelera
+                <span *ngIf="item.status === 'ELIMINADO' || item.deletedFromUi" style="background: rgba(100, 116, 139, 0.2); color: #94a3b8; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(100, 116, 139, 0.3); display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;">
+                  <i class="fa-solid fa-trash"></i> Oculto / Papelera
                 </span>
               </td>
-              <td style="padding: 14px; text-align: center;">
-                <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;">
+              <td style="padding: 14px; text-align: center; white-space: nowrap;">
+                <div style="display: flex; gap: 6px; justify-content: center; flex-wrap: nowrap;">
                   <!-- Suspender / Pausar -->
                   <button *ngIf="item.status === 'EN_CURSO' || item.status === 'INSCRIPTO'" 
                           (click)="pauseSubscription(item)" 
                           class="btn btn-sm" 
                           title="Suspender o Pausar Suscripción"
-                          style="background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); border-radius: 6px; padding: 4px 8px; font-size: 0.78rem; cursor: pointer;">
+                          style="background: rgba(249, 115, 22, 0.15); color: #fb923c; border: 1px solid rgba(249, 115, 22, 0.3); border-radius: 6px; padding: 6px 10px; font-size: 0.78rem; cursor: pointer; white-space: nowrap;">
                     <i class="fa-solid fa-pause me-1"></i> Suspender
                   </button>
 
@@ -229,7 +229,7 @@
                           (click)="resumeSubscription(item)" 
                           class="btn btn-sm" 
                           title="Reanudar Suscripción (máximo 3 meses desde la pausa)"
-                          style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 4px 8px; font-size: 0.78rem; cursor: pointer;">
+                          style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 6px; padding: 6px 10px; font-size: 0.78rem; cursor: pointer; white-space: nowrap;">
                     <i class="fa-solid fa-play me-1"></i> Reanudar
                   </button>
 
@@ -238,7 +238,7 @@
                           (click)="deleteSubscription(item)" 
                           class="btn btn-sm" 
                           title="Eliminar de la vista visible (conservado en base de datos)"
-                          style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 4px 8px; font-size: 0.78rem; cursor: pointer;">
+                          style="background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 6px 10px; font-size: 0.78rem; cursor: pointer; white-space: nowrap;">
                     <i class="fa-solid fa-trash me-1"></i> Eliminar
                   </button>
                 </div>

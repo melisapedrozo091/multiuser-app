@@ -5,6 +5,7 @@ import { RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { PdfExportService } from '../../core/services/pdf-export.service';
 import { EnrollmentService, Enrollment } from '../../core/services/enrollment.service';
+import { ReviewService } from '../../core/services/review.service';
 
 export interface UserCourse {
   id: number;
@@ -84,6 +85,7 @@ export class ProfileComponent implements OnInit {
   invoices: { id: string; date: string; concept: string; amount: string; status: string }[] = [];
 
   private enrollmentService = inject(EnrollmentService);
+  private reviewService = inject(ReviewService);
   private route = inject(ActivatedRoute);
 
   constructor(
@@ -226,11 +228,27 @@ export class ProfileComponent implements OnInit {
     this.ratingModalCourse = null;
   }
 
-  confirmRating(): void {
+  async confirmRating(): Promise<void> {
     if (!this.ratingModalCourse) return;
-    const res = this.enrollmentService.rateCourse(this.ratingModalCourse.enrollmentId, this.selectedRating, this.ratingComment);
+    const courseId = this.ratingModalCourse.id;
+    const courseName = this.ratingModalCourse.name;
+    const rating = this.selectedRating;
+    const comment = this.ratingComment;
+
+    const res = this.enrollmentService.rateCourse(this.ratingModalCourse.enrollmentId, rating, comment);
     if (res.success) {
-      this.successMessage = res.message;
+      try {
+        await this.reviewService.createReview({
+          courseId,
+          courseName,
+          rating,
+          comment
+        });
+      } catch (e) {
+        console.error('Error al guardar reseña en la base de datos:', e);
+      }
+
+      this.successMessage = `${res.message} Tu reseña se guardó en la base de datos y ya está visible en el Foro.`;
       this.closeRatingModal();
       this.loadUserCourses();
     }

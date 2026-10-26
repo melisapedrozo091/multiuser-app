@@ -24,3 +24,15 @@ export interface ChatMessage {
   message: string;
   timestamp: string;
 }
+
+export interface CourseReview {
+  id: string;
+  courseId: number;
+  courseName: string;
+  userId?: string;
+  userEmail: string;
+  userName: string;
+  rating: number; // 1 to 5
+  comment: string;
+  createdAt: string;
+}

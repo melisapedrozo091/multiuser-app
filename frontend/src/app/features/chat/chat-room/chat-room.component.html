@@ -1,57 +1,291 @@
 <div class="page-container">
+  <!-- Header Section -->
   <div class="header-section">
-    <h1>💬 Foro / Chat en Tiempo Real</h1>
-    <p class="subtitle">Comunícate en vivo con otros usuarios de la comunidad</p>
+    <div class="header-main">
+      <div class="title-wrap">
+        <h1>💬 Foro & Reseñas de la Comunidad</h1>
+        <p class="subtitle">Consulta opiniones reales de alumnos, calificaciones de cursos y participa en los debates técnicos.</p>
+      </div>
+
+      <!-- Quick Action / Stats -->
+      <div class="header-stats">
+        <div class="stat-pill">
+          <span class="stat-icon">⭐</span>
+          <div class="stat-info">
+            <strong>{{ averageRating }} / 5.0</strong>
+            <small>{{ reviews.length }} reseñas en BD</small>
+          </div>
+        </div>
+
+        <button *ngIf="auth.currentUser" class="btn btn-primary add-review-btn" (click)="openReviewModal()">
+          <i class="fa-solid fa-star me-2"></i> Calificar un Curso
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs-nav">
+      <button 
+        class="tab-btn" 
+        [class.active]="activeTab === 'reviews'" 
+        (click)="activeTab = 'reviews'">
+        <i class="fa-solid fa-star me-2" style="color: #fbbf24;"></i>
+        Reseñas de Cursos
+        <span class="badge-count">{{ reviews.length }}</span>
+      </button>
+
+      <button 
+        class="tab-btn" 
+        [class.active]="activeTab === 'chat'" 
+        (click)="activeTab = 'chat'">
+        <i class="fa-solid fa-comments me-2"></i>
+        Foro de Dudas & Chat
+        <span class="badge-count">{{ messages.length }}</span>
+      </button>
+
+      <button 
+        class="tab-btn" 
+        [class.active]="activeTab === 'all'" 
+        (click)="activeTab = 'all'">
+        <i class="fa-solid fa-layer-group me-2"></i>
+        Muro Completo
+      </button>
+    </div>
   </div>
 
-  <div class="card chat-card">
-
-    <!-- Loading State -->
-    <div class="loading-state" *ngIf="loading">
-      <div class="spinner"></div>
-      <p>Cargando mensajes del foro...</p>
-    </div>
-
-    <div class="messages-container" *ngIf="!loading">
-      <div
-        *ngFor="let m of messages"
-        class="message-bubble"
-        [class.my-message]="m.senderUid === auth.currentUser?.id"
-      >
-        <div class="message-meta">
-          <strong class="sender">{{ m.senderUid === auth.currentUser?.id ? 'Tú' : m.senderName }}</strong>
-          <span class="time">{{ m.timestamp | date:'shortTime' }}</span>
-        </div>
-        <p class="text">{{ m.message }}</p>
+  <!-- TAB 1: RESEÑAS DE CURSOS -->
+  <div class="tab-content" *ngIf="activeTab === 'reviews' || activeTab === 'all'">
+    <div class="section-toolbar">
+      <div class="filter-group">
+        <label for="courseFilterSelect"><i class="fa-solid fa-filter me-1"></i> Filtrar por curso:</label>
+        <select id="courseFilterSelect" [(ngModel)]="selectedCourseFilter" class="filter-select">
+          <option value="TODOS">Todos los cursos ({{ reviews.length }})</option>
+          <option *ngFor="let cName of uniqueCourseNames" [value]="cName">{{ cName }}</option>
+        </select>
       </div>
 
-      <div class="empty-chat" *ngIf="messages.length === 0">
-        <span>🗨️</span>
-        <p>Aún no hay mensajes. ¡Sé el primero en escribir!</p>
+      <div class="toolbar-info">
+        <span>Mostrando <strong>{{ filteredReviews.length }}</strong> opiniones guardadas en la base de datos MySQL</span>
       </div>
     </div>
 
-    <div class="chat-input-area" *ngIf="auth.currentUser && !loading">
-      <input
-        type="text"
-        [(ngModel)]="newMessage"
-        (keyup.enter)="onSend()"
-        placeholder="Escribe tu consulta o respuesta aquí y presiona Enter..."
-        class="chat-input"
-        [disabled]="sending"
-      />
-      <button class="btn btn-primary send-btn" (click)="onSend()" [disabled]="sending || !newMessage.trim()">
-        <span *ngIf="!sending">✉️ Enviar</span>
-        <span *ngIf="sending">Enviando...</span>
+    <!-- Empty State for Reviews -->
+    <div class="card empty-card" *ngIf="filteredReviews.length === 0">
+      <div class="empty-icon">⭐</div>
+      <h3>No hay reseñas para este curso todavía</h3>
+      <p>Sé el primer alumno en compartir tu experiencia y calificación.</p>
+      <button *ngIf="auth.currentUser" class="btn btn-primary mt-2" (click)="openReviewModal()">
+        <i class="fa-solid fa-pencil me-1"></i> Escribir Reseña
       </button>
     </div>
 
-    <div class="login-prompt-banner" *ngIf="!auth.currentUser && !loading">
-      <div class="prompt-text">
-        <span>💬 <strong>Foro de la Comunidad en Modo Lectura:</strong></span>
-        <p>Puedes leer todas las consultas de la comunidad. Para publicar tu pregunta o responder, por favor inicia sesión.</p>
+    <!-- Reviews Grid -->
+    <div class="reviews-grid" *ngIf="filteredReviews.length > 0">
+      <div class="review-card" *ngFor="let r of filteredReviews">
+        <!-- Card Header: Author Info & Rating -->
+        <div class="review-header">
+          <div class="author-block">
+            <div class="author-avatar">{{ getInitials(r.userName) }}</div>
+            <div class="author-details">
+              <div class="author-name-row">
+                <strong class="author-name">{{ r.userName }}</strong>
+                <span class="verified-tag"><i class="fa-solid fa-circle-check"></i> Alumno</span>
+              </div>
+              <small class="author-email">{{ r.userEmail }}</small>
+            </div>
+          </div>
+
+          <!-- Stars & Score -->
+          <div class="rating-display">
+            <div class="stars-row">
+              <i class="fa-solid fa-star gold" *ngFor="let s of getStarsArray(r.rating)"></i>
+              <i class="fa-regular fa-star empty" *ngFor="let s of getEmptyStarsArray(r.rating)"></i>
+            </div>
+            <span class="rating-badge">{{ r.rating }} / 5 estrellas</span>
+          </div>
+        </div>
+
+        <!-- Course Target Badge -->
+        <div class="course-target-row">
+          <span class="course-tag">
+            <i class="fa-solid fa-graduation-cap me-1"></i>
+            <strong>Curso Calificado:</strong> {{ r.courseName }}
+          </span>
+        </div>
+
+        <!-- Review Comment / Message -->
+        <div class="review-body">
+          <div class="quote-icon">“</div>
+          <p class="review-text">{{ r.comment }}</p>
+        </div>
+
+        <!-- Card Footer -->
+        <div class="review-footer">
+          <span class="review-date">
+            <i class="fa-regular fa-calendar me-1"></i>
+            {{ r.createdAt | date:'mediumDate' }}
+          </span>
+          <span class="db-badge">
+            <i class="fa-solid fa-database me-1"></i>
+            Guardado en MySQL (CourseReview)
+          </span>
+        </div>
       </div>
-      <a routerLink="/login" class="btn btn-primary">🔑 Iniciar Sesión para Comentar</a>
+    </div>
+  </div>
+
+  <!-- TAB 2: CHAT & FORO EN VIVO -->
+  <div class="tab-content mt-4" *ngIf="activeTab === 'chat' || activeTab === 'all'">
+    <div class="card chat-card">
+      <div class="chat-header-bar">
+        <div class="chat-title">
+          <span class="live-dot"></span>
+          <strong>Foro de Preguntas & Soporte Técnico en Vivo</strong>
+        </div>
+        <span class="msg-counter">{{ messages.length }} mensajes registrados</span>
+      </div>
+
+      <!-- Loading State -->
+      <div class="loading-state" *ngIf="loading">
+        <div class="spinner"></div>
+        <p>Cargando mensajes del foro...</p>
+      </div>
+
+      <!-- Messages Container -->
+      <div class="messages-container" *ngIf="!loading">
+        <div
+          *ngFor="let m of messages"
+          class="message-bubble"
+          [class.my-message]="m.senderUid === auth.currentUser?.id"
+        >
+          <div class="message-meta">
+            <strong class="sender">{{ m.senderUid === auth.currentUser?.id ? 'Tú' : m.senderName }}</strong>
+            <span class="time">{{ m.timestamp | date:'shortTime' }}</span>
+          </div>
+          <p class="text">{{ m.message }}</p>
+        </div>
+
+        <div class="empty-chat" *ngIf="messages.length === 0">
+          <span>🗨️</span>
+          <p>Aún no hay mensajes en esta sala. ¡Sé el primero en iniciar la conversación!</p>
+        </div>
+      </div>
+
+      <!-- Input Area for Logged In User -->
+      <div class="chat-input-area" *ngIf="auth.currentUser && !loading">
+        <input
+          type="text"
+          [(ngModel)]="newMessage"
+          (keyup.enter)="onSend()"
+          placeholder="Escribe tu consulta o aporte técnico y presiona Enter..."
+          class="chat-input"
+          [disabled]="sending"
+        />
+        <button class="btn btn-primary send-btn" (click)="onSend()" [disabled]="sending || !newMessage.trim()">
+          <span *ngIf="!sending"><i class="fa-solid fa-paper-plane me-1"></i> Enviar</span>
+          <span *ngIf="sending">Enviando...</span>
+        </button>
+      </div>
+
+      <!-- Read-Only Banner for Visitors -->
+      <div class="login-prompt-banner" *ngIf="!auth.currentUser && !loading">
+        <div class="prompt-text">
+          <span>💬 <strong>Foro de la Comunidad en Modo Lectura:</strong></span>
+          <p>Puedes leer todas las consultas técnicas y reseñas. Para participar o dejar una reseña, inicia sesión.</p>
+        </div>
+        <a routerLink="/login" class="btn btn-primary">
+          <i class="fa-solid fa-arrow-right-to-bracket me-1"></i> Iniciar Sesión
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CALIFICAR CURSO Y GUARDAR RESEÑA EN BD -->
+  <div class="modal-backdrop" *ngIf="showReviewModal">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-icon">⭐</div>
+          <div>
+            <h3>Calificar Curso & Dejar Reseña</h3>
+            <p>Tu opinión se guardará en la tabla de la base de datos y se mostrará aquí en el foro.</p>
+          </div>
+        </div>
+        <button class="btn-close-modal" (click)="closeReviewModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Feedback Alerts -->
+        <div class="alert alert-success" *ngIf="reviewFeedback">
+          <i class="fa-solid fa-circle-check me-2"></i> {{ reviewFeedback }}
+        </div>
+        <div class="alert alert-danger" *ngIf="reviewError">
+          <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ reviewError }}
+        </div>
+
+        <!-- Course Selector -->
+        <div class="form-group mb-3">
+          <label for="reviewCourseSelect" class="form-label">
+            <strong>¿Sobre qué curso quieres dejar las estrellas?</strong>
+          </label>
+          <select id="reviewCourseSelect" [(ngModel)]="selectedCourseId" class="form-control form-select">
+            <option *ngFor="let course of availableCourses" [value]="course.id">
+              {{ course.name }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Star Rating Selector -->
+        <div class="form-group mb-3 text-center rating-box">
+          <label class="form-label d-block"><strong>¿Cuántas estrellas le das al curso?</strong></label>
+          <div class="stars-interactive">
+            <button
+              type="button"
+              class="star-btn"
+              *ngFor="let star of [1, 2, 3, 4, 5]"
+              (click)="setRating(star)"
+              [class.active]="star <= newRating"
+            >
+              ★
+            </button>
+          </div>
+          <span class="rating-helper">{{ newRating }} de 5 estrellas</span>
+        </div>
+
+        <!-- Review Comment -->
+        <div class="form-group mb-3">
+          <label for="reviewCommentText" class="form-label">
+            <strong>Mensaje / Opinión sobre el curso:</strong>
+          </label>
+          <textarea
+            id="reviewCommentText"
+            [(ngModel)]="newReviewComment"
+            rows="4"
+            class="form-control"
+            placeholder="Cuéntale a la comunidad qué te pareció el contenido, la metodología, el profesor y los proyectos..."
+          ></textarea>
+        </div>
+
+        <!-- Who writes note -->
+        <div class="author-preview-box">
+          <small>
+            <i class="fa-solid fa-user me-1"></i>
+            Publicarás como: <strong>{{ auth.currentUser?.displayName || auth.currentUser?.email }}</strong>
+          </small>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeReviewModal()" [disabled]="savingReview">
+          Cancelar
+        </button>
+        <button class="btn btn-primary" (click)="submitReview()" [disabled]="savingReview || !newReviewComment.trim()">
+          <span *ngIf="!savingReview">
+            <i class="fa-solid fa-floppy-disk me-1"></i> Guardar Reseña en Base de Datos
+          </span>
+          <span *ngIf="savingReview">Guardando en MySQL...</span>
+        </button>
+      </div>
     </div>
   </div>
 </div>

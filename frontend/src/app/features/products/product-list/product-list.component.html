@@ -122,12 +122,9 @@
     <div class="modal-card modal-large" (click)="$event.stopPropagation()">
       <button class="close-btn" (click)="closeCourseDetail()">✖</button>
       
-      <div class="modal-header">
-        <span class="modal-badge">🎓 Guía de Temas del Curso</span>
-        <h2>{{ selectedCourseDetail.name }}</h2>
-        <div class="author-tag">
-          👤 <strong>Creado por:</strong> {{ getSyllabus(selectedCourseDetail).author }}
-        </div>
+      <div class="modal-header-vertical" style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 16px; margin-bottom: 20px; padding-right: 45px;">
+        <span class="modal-badge" style="display: inline-block; background: rgba(99, 102, 241, 0.18); color: #818cf8; font-size: 0.8rem; font-weight: 700; padding: 4px 12px; border-radius: 8px;">🎓 Guía de Temas del Curso</span>
+        <h2 style="font-size: 1.45rem; font-weight: 800; line-height: 1.35; margin: 4px 0 0 0; color: #fff;">{{ selectedCourseDetail.name }}</h2>
       </div>
 
       <div class="modal-body">
@@ -492,7 +489,7 @@
             <i class="fa-solid fa-receipt"></i> Ver en la Solapa de Pagos (Mi Perfil)
           </button>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
             <button (click)="goToProfileCourses()" 
                     class="btn btn-secondary" 
                     style="padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.15); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
@@ -505,7 +502,7 @@
               <i class="fa-solid fa-file-pdf"></i> Descargar Factura PDF
             </button>
 
-            <a [href]="'https://wa.me/5491136341454?text=Hola!%20Acabo%20de%20inscribirme%20al%20curso%20' + (selectedProduct?.name || '') + '%20(C%C3%B3digo:%20' + lastEnrollmentCode + ')%20y%20deseo%20confirmar%20mi%20inscripci%C3%B3n.'" 
+            <a [href]="'https://wa.me/5491136341454?text=Hola!%20Acabo%20de%20inscribirme%20al%20curso%20' + (enrollingCourse?.name || '') + '%20(C%C3%B3digo:%20' + (lastEnrollmentResult?.id || '') + ')%20y%20deseo%20confirmar%20mi%20inscripci%C3%B3n.'" 
                target="_blank"
                class="btn btn-secondary" 
                style="padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; background: #25d366; color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;">

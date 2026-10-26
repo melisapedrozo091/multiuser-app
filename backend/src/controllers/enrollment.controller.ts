@@ -242,6 +242,43 @@ export const updateEnrollment = async (req: AuthenticatedRequest, res: Response)
           reviewComment: reviewComment || null
         }
       });
+
+      // Persistir también en la tabla CourseReview para visualización en el Foro
+      try {
+        const existingReview = await prisma.courseReview.findFirst({
+          where: {
+            userEmail: enrollment.userEmail,
+            courseId: enrollment.courseId
+          }
+        });
+
+        if (existingReview) {
+          await prisma.courseReview.update({
+            where: { id: existingReview.id },
+            data: {
+              rating: numRating,
+              comment: reviewComment || 'Calificación del curso',
+              userName: enrollment.userName,
+              createdAt: new Date()
+            }
+          });
+        } else {
+          await prisma.courseReview.create({
+            data: {
+              courseId: enrollment.courseId,
+              courseName: enrollment.courseName,
+              userId: enrollment.userId,
+              userEmail: enrollment.userEmail,
+              userName: enrollment.userName,
+              rating: numRating,
+              comment: reviewComment || 'Calificación del curso'
+            }
+          });
+        }
+      } catch (reviewErr) {
+        console.error('Error al guardar reseña en CourseReview:', reviewErr);
+      }
+
       return res.json({ message: '¡Gracias por calificar el curso!', enrollment: updated });
     }
 

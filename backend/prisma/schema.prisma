@@ -92,3 +92,15 @@ model Certificate {
   status          String   @default("EMITIDO")
   createdAt       DateTime @default(now())
 }
+
+model CourseReview {
+  id         String   @id @default(cuid())
+  courseId   Int
+  courseName String
+  userId     String
+  userEmail  String
+  userName   String
+  rating     Int
+  comment    String   @db.Text
+  createdAt  DateTime @default(now())
+}

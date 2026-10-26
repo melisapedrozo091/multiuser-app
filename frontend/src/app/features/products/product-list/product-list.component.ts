@@ -329,9 +329,9 @@ export class ProductListComponent implements OnInit {
 
   getSyllabus(product: Product): CourseSyllabus {
     return {
-      author: 'Melisa Pedrozo & Equipo de Contenido Tech',
+      author: 'Equipo Académico Tech',
       supportEmail: 'soporte@academiatech.com',
-      supportPhone: '+54 9 11 2345-6789',
+      supportPhone: '+54 9 11 3634-1454',
       modules: [
         {
           title: 'Módulo 1: Fundamentos y Arquitectura Base',
