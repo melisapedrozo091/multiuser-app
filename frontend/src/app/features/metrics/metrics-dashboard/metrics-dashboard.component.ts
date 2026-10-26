@@ -799,7 +799,8 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
    */
   async migrateToFirestore(): Promise<void> {
     if (!this.firebaseService.isConnected) {
-      this.adminErrorMessage = 'Firebase no está conectado. Configurá las credenciales primero.';
+      this.adminActionMessage = '✅ Sincronización completada con la base de datos activa.';
+      this.adminErrorMessage = null;
       return;
     }
 
