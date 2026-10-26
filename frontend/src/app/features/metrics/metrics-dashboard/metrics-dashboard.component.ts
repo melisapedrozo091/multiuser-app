@@ -126,7 +126,9 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
     }
 
     this.firestoreSub = this.firebaseService.enrollments$.subscribe((firestoreData) => {
-      if (firestoreData.length === 0) return;
+      // Prioritize MySQL database data. Only use Firestore if Firestore has more complete records
+      // or if DB had 0 records, to prevent overwriting full database seed history.
+      if (!firestoreData || firestoreData.length === 0 || firestoreData.length < this.enrollments.length) return;
 
       this.ngZone.run(() => {
         const converted: Enrollment[] = firestoreData.map((fe) => ({
@@ -591,32 +593,31 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
             },
             title: {
               display: true,
-              text: 'USD',
+              text: 'Ingresos USD ($)',
               color: '#818cf8',
-              font: { family: 'Inter, sans-serif', size: 11, weight: 'bold' }
-            }
-          },
-          yCount: {
-            type: 'linear',
-            display: true,
-            position: 'right',
-            grid: { drawOnChartArea: false },
-            ticks: {
-              color: '#34d399',
-              font: { family: 'Inter, sans-serif' },
-              stepSize: 1,
-              precision: 0
-            },
-            title: {
-              display: true,
-              text: 'Inscripciones',
-              color: '#34d399',
               font: { family: 'Inter, sans-serif', size: 11, weight: 'bold' }
             }
           },
           yArs: {
             type: 'linear',
-            display: false, // Eje secundario para evitar saturar el gráfico
+            display: true,
+            position: 'right',
+            grid: { drawOnChartArea: false },
+            ticks: {
+              color: '#38bdf8',
+              font: { family: 'Inter, sans-serif' },
+              callback: (value) => `$${Number(value).toLocaleString('es-AR')} ARS`
+            },
+            title: {
+              display: true,
+              text: 'Ingresos Pesos (ARS $)',
+              color: '#38bdf8',
+              font: { family: 'Inter, sans-serif', size: 11, weight: 'bold' }
+            }
+          },
+          yCount: {
+            type: 'linear',
+            display: false,
             grid: { drawOnChartArea: false }
           }
         },

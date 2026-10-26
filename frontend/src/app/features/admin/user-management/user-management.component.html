@@ -4,9 +4,14 @@
       <h1>🛡️ Administrador de Usuarios</h1>
       <p class="subtitle">Panel exclusivo para gestionar roles y permisos del sistema</p>
     </div>
-    <button class="btn btn-secondary" (click)="fetchUsers()" [disabled]="loading">
-      🔄 Actualizar Lista
-    </button>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+      <button class="btn btn-primary" (click)="openCreateModal()" style="display: flex; align-items: center; gap: 8px;">
+        <i class="fa-solid fa-user-plus"></i> Registrar Usuario
+      </button>
+      <button class="btn btn-secondary" (click)="fetchUsers()" [disabled]="loading">
+        🔄 Actualizar Lista
+      </button>
+    </div>
   </div>
 
   <!-- Loading State -->
@@ -67,6 +72,67 @@
     <div class="empty-state" *ngIf="users.length === 0">
       <span>👥</span>
       <p>No hay usuarios registrados en el sistema.</p>
+    </div>
+  </div>
+
+  <!-- Modal para Registrar Nuevo Usuario (Admin) -->
+  <div class="modal-backdrop" *ngIf="showCreateModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.75); display: flex; align-items: center; justify-content: center; z-index: 1050; padding: 20px;">
+    <div class="modal-card" style="background: var(--card-bg, #1e293b); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 16px; padding: 30px; width: 100%; max-width: 480px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 style="margin: 0; font-size: 1.3rem; color: #fff; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-user-plus text-primary"></i> Registrar Nuevo Usuario
+        </h3>
+        <button type="button" (click)="closeCreateModal()" style="background: none; border: none; color: #94a3b8; font-size: 1.3rem; cursor: pointer;">
+          &times;
+        </button>
+      </div>
+
+      <p style="color: #94a3b8; font-size: 0.88rem; margin-bottom: 20px;">
+        Crea un nuevo usuario directamente en la base de datos MySQL con el rol deseado (Cliente o Administrador).
+      </p>
+
+      <form [formGroup]="createForm" (ngSubmit)="submitCreateUser()">
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Nombre Completo / Mostrar como</label>
+          <input type="text" formControlName="displayName" placeholder="Ej: Mariano López" style="width: 100%; padding: 10px 14px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; font-size: 0.95rem;" />
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Correo Electrónico</label>
+          <input type="email" formControlName="email" placeholder="usuario@ejemplo.com" style="width: 100%; padding: 10px 14px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; font-size: 0.95rem;" />
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Contraseña</label>
+          <input type="password" formControlName="password" placeholder="Mínimo 6 caracteres" style="width: 100%; padding: 10px 14px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; font-size: 0.95rem;" />
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #cbd5e1; margin-bottom: 6px;">Rol de Usuario</label>
+          <select formControlName="role" style="width: 100%; padding: 10px 14px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; font-size: 0.95rem; cursor: pointer;">
+            <option value="CLIENTE">👤 Cliente (Acceso regular al catálogo y cursos)</option>
+            <option value="ADMIN">🛡️ Administrador (Acceso total al panel y gestión)</option>
+          </select>
+        </div>
+
+        <div *ngIf="createError" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; padding: 10px 14px; border-radius: 8px; font-size: 0.88rem; margin-bottom: 16px;">
+          ⚠️ {{ createError }}
+        </div>
+
+        <div *ngIf="createSuccess" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; padding: 10px 14px; border-radius: 8px; font-size: 0.88rem; margin-bottom: 16px;">
+          ✅ {{ createSuccess }}
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+          <button type="button" class="btn btn-secondary" (click)="closeCreateModal()" [disabled]="creating">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="creating || createForm.invalid" style="min-width: 130px;">
+            <span *ngIf="creating"><i class="fa-solid fa-spinner fa-spin me-2"></i> Guardando...</span>
+            <span *ngIf="!creating"><i class="fa-solid fa-check me-2"></i> Guardar Usuario</span>
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </div>

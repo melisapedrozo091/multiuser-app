@@ -145,7 +145,7 @@ export class LoginComponent {
 
     try {
       if (this.isRegister) {
-        await this.auth.register(email, password, displayName, role);
+        await this.auth.register(email, password, displayName, 'CLIENTE');
       } else {
         await this.auth.login(email, password);
       }

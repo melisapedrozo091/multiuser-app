@@ -6,19 +6,12 @@
         <i class="fa-solid fa-chart-pie text-primary"></i> Panel de Métricas & Rendimiento Global
       </h2>
       <p style="color: #94a3b8; font-size: 0.9rem; margin: 5px 0 0 0;">
-        Estadísticas, gráficos circulares e inscripciones almacenadas en tiempo real (Exclusivo Administrador)
-        <span style="display: inline-flex; align-items: center; gap: 6px; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 3px 12px; border-radius: 12px; font-size: 0.8rem; margin-left: 8px; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 600;">
-          <span style="width: 7px; height: 7px; background: #34d399; border-radius: 50%; display: inline-block;"></span>
-          Firebase Firestore — Tiempo Real
-        </span>
+        Estadísticas, gráficos circulares e inscripciones almacenadas en la base de datos (Exclusivo Administrador)
       </p>
     </div>
 
     <!-- Admin Action Buttons -->
     <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-      <button (click)="migrateToFirestore()" class="btn btn-sm" style="padding: 10px 18px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 8px; background: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.4); cursor: pointer;">
-        <i class="fa-solid fa-cloud-arrow-up"></i> Sincronizar con Firestore
-      </button>
       <button (click)="exportReportCsv()" class="btn btn-secondary" style="padding: 10px 18px; border-radius: 8px; font-weight: 600; display: flex; align-items: center; gap: 8px; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); cursor: pointer;">
         <i class="fa-solid fa-file-csv"></i> Exportar CSV
       </button>
@@ -136,10 +129,9 @@
     <div class="chart-card" style="background: var(--card-bg, #1e293b); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: center; margin-bottom: 35px;">
       <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0 0 5px 0; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px;">
         <i class="fa-solid fa-chart-bar text-info"></i> Ingresos & Inscripciones por Mes
-        <span *ngIf="isFirestoreConnected" style="font-size: 0.7rem; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 8px; border-radius: 8px; font-weight: 600;">EN VIVO</span>
       </h3>
       <p style="color: #94a3b8; font-size: 0.82rem; margin-bottom: 15px;">
-        Evolución de ingresos en <strong>USD ($)</strong>, <strong>Pesos Argentinos (ARS $)</strong> y cantidad de inscripciones en los últimos 6 meses
+        Evolución de ingresos en <strong>Dólares (USD $)</strong>, <strong>Pesos Argentinos (ARS $)</strong> y cantidad de inscripciones en los últimos 6 meses
       </p>
       <div style="position: relative; height: 320px; width: 100%;">
         <canvas #barCanvas></canvas>

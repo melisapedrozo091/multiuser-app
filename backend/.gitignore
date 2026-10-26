@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+dist/
+
+# Secrets & Service Accounts
+firebase-service-key.json
+*.json.key
+.env
+.env.*
+*.pem
+dev.db
+*.db
+
+# Logs
+logs
+*.log
+npm-debug.log*

@@ -48,6 +48,58 @@ export const updateUserRole = async (req: AuthenticatedRequest, res: Response) =
   }
 };
 
+export const createUser = async (req: AuthenticatedRequest, res: Response) => {
+  if (req.user?.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Acceso denegado. Se requiere rol ADMIN.' });
+  }
+
+  const { email, password, displayName, role } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ error: 'El email y la contraseña son requeridos.' });
+  }
+
+  const assignedRole = role === 'ADMIN' ? 'ADMIN' : 'CLIENTE';
+
+  try {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return res.status(400).json({ error: 'Ya existe un usuario registrado con este correo.' });
+    }
+
+    const bcrypt = await import('bcryptjs');
+    const { randomUUID } = await import('crypto');
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const userId = randomUUID();
+
+    let firebaseUid: string = userId;
+    try {
+      const userRecord = await firebaseAdmin.auth().createUser({
+        email,
+        password,
+        displayName: displayName || email.split('@')[0]
+      });
+      firebaseUid = userRecord.uid;
+      await firebaseAdmin.auth().setCustomUserClaims(firebaseUid, { role: assignedRole });
+    } catch (fbErr: any) {
+      console.warn('Firebase sync warning on admin createUser:', fbErr?.message);
+    }
+
+    const newUser = await prisma.user.create({
+      data: {
+        id: firebaseUid,
+        email,
+        password: hashedPassword,
+        displayName: displayName || email.split('@')[0],
+        role: assignedRole
+      }
+    });
+
+    res.status(201).json(newUser);
+  } catch (error: any) {
+    res.status(400).json({ error: 'Error al crear usuario', details: error.message });
+  }
+};
+
 // Compute dynamic REAL metrics from database records
 export const getDashboardMetrics = async (req: AuthenticatedRequest, res: Response) => {
   try {

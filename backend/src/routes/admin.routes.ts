@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   getUsers,
+  createUser,
   updateUserRole,
   getDashboardMetrics,
   importCourses
@@ -9,6 +10,7 @@ import {
 const router = Router();
 
 router.get('/users', getUsers);
+router.post('/users', createUser);
 router.patch('/users/:id/role', updateUserRole);
 router.get('/metrics', getDashboardMetrics);
 router.post('/courses/import', importCourses);
