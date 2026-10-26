@@ -1,6 +1,6 @@
 # 🚀 Plataforma Multi-Usuario Standalone (Angular + Node/Express + Prisma)
 
-Aplicación web full-stack que desarrollé con una arquitectura robusta, utilizando **Angular** para el frontend y una API en **Node.js (Express) + Prisma ** conectada a base de datos relacional, con autenticación centralizada mediante Firebase.
+Aplicación web full-stack que desarrollé utilizando **Angular** para el frontend y una API en **Node.js (Express) + Prisma ** conectada a base de datos relacional con Phpadmin y con autenticación centralizada mediante Firebase.
 
 ## 🛠️ Stack Tecnológico
 
