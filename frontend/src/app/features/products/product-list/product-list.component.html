@@ -504,6 +504,13 @@
                     style="padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
               <i class="fa-solid fa-file-pdf"></i> Descargar Factura PDF
             </button>
+
+            <a [href]="'https://wa.me/5491136341454?text=Hola!%20Acabo%20de%20inscribirme%20al%20curso%20' + (selectedProduct?.name || '') + '%20(C%C3%B3digo:%20' + lastEnrollmentCode + ')%20y%20deseo%20confirmar%20mi%20inscripci%C3%B3n.'" 
+               target="_blank"
+               class="btn btn-secondary" 
+               style="padding: 10px 16px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; background: #25d366; color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none;">
+              <i class="fa-brands fa-whatsapp"></i> Enviar Comprobante por WhatsApp
+            </a>
           </div>
         </div>
       </div>

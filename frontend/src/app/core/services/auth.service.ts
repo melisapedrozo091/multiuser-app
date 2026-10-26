@@ -10,8 +10,18 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(this.getStoredUser());
   user$: Observable<User | null> = this.currentUserSubject.asObservable();
 
+  constructor() {
+    // Limpieza de sesiones previas en localStorage para asegurar que inicie siempre sin sesión iniciada
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('user_data');
+      localStorage.removeItem('jwt_token');
+    }
+  }
+
   private getStoredUser(): User | null {
-    const raw = localStorage.getItem('user_data');
+    // Usamos sessionStorage: la sesión existe solo durante la pestaña activa del usuario
+    if (typeof window === 'undefined') return null;
+    const raw = sessionStorage.getItem('user_data');
     return raw ? JSON.parse(raw) : null;
   }
 
@@ -20,7 +30,8 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    return localStorage.getItem('jwt_token');
+    if (typeof window === 'undefined') return null;
+    return sessionStorage.getItem('jwt_token');
   }
 
   private getFirebaseAuth(): Auth | null {
@@ -45,7 +56,7 @@ export class AuthService {
       try {
         const cred = await signInWithEmailAndPassword(fbAuth, email, password);
         const token = await cred.user.getIdToken();
-        localStorage.setItem('jwt_token', token);
+        sessionStorage.setItem('jwt_token', token);
         const role = email.toLowerCase().includes('admin') ? 'ADMIN' : 'CLIENTE';
         const user: User = {
           id: cred.user.uid,
@@ -54,7 +65,7 @@ export class AuthService {
           displayName: cred.user.displayName || email.split('@')[0],
           role
         };
-        localStorage.setItem('user_data', JSON.stringify(user));
+        sessionStorage.setItem('user_data', JSON.stringify(user));
         this.currentUserSubject.next(user);
         return user;
       } catch (fbErr: any) {
@@ -74,9 +85,9 @@ export class AuthService {
     }
 
     const data = await res.json();
-    localStorage.setItem('jwt_token', data.token);
+    sessionStorage.setItem('jwt_token', data.token);
     const user: User = data.user;
-    localStorage.setItem('user_data', JSON.stringify(user));
+    sessionStorage.setItem('user_data', JSON.stringify(user));
     this.currentUserSubject.next(user);
     return user;
   }
@@ -87,7 +98,7 @@ export class AuthService {
       try {
         const cred = await createUserWithEmailAndPassword(fbAuth, email, password);
         const token = await cred.user.getIdToken();
-        localStorage.setItem('jwt_token', token);
+        sessionStorage.setItem('jwt_token', token);
         const user: User = {
           id: cred.user.uid,
           uid: cred.user.uid,
@@ -95,7 +106,7 @@ export class AuthService {
           displayName: displayName || email.split('@')[0],
           role
         };
-        localStorage.setItem('user_data', JSON.stringify(user));
+        sessionStorage.setItem('user_data', JSON.stringify(user));
         this.currentUserSubject.next(user);
 
         fetch(`${environment.apiBase}/auth/register`, {
@@ -122,9 +133,9 @@ export class AuthService {
     }
 
     const data = await res.json();
-    localStorage.setItem('jwt_token', data.token);
+    sessionStorage.setItem('jwt_token', data.token);
     const user: User = data.user;
-    localStorage.setItem('user_data', JSON.stringify(user));
+    sessionStorage.setItem('user_data', JSON.stringify(user));
     this.currentUserSubject.next(user);
     return user;
   }
@@ -134,6 +145,8 @@ export class AuthService {
     if (fbAuth) {
       fbSignOut(fbAuth).catch(() => {});
     }
+    sessionStorage.removeItem('jwt_token');
+    sessionStorage.removeItem('user_data');
     localStorage.removeItem('jwt_token');
     localStorage.removeItem('user_data');
     this.currentUserSubject.next(null);

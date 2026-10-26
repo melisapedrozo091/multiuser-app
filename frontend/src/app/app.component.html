@@ -62,8 +62,8 @@
         <a href="tel:08103338324" class="footer-h-link">
           <i class="fa-solid fa-phone me-1"></i> 0810-333-TECH (8324)
         </a>
-        <a href="https://wa.me/5491155551234" target="_blank" class="footer-h-link">
-          <i class="fa-brands fa-whatsapp me-1 text-success"></i> WhatsApp Directo
+        <a href="https://wa.me/5491136341454?text=Hola!%20Quisiera%20hacer%20una%20consulta%20sobre%20Academia%20Tech." target="_blank" class="footer-h-link">
+          <i class="fa-brands fa-whatsapp me-1 text-success"></i> WhatsApp (11 3634-1454)
         </a>
       </div>
     </div>
@@ -177,7 +177,13 @@
       <p class="refund-time">
         El reintegro se procesará en tu medio de pago original en 48 a 72 horas hábiles.
       </p>
-      <div class="mt-4">
+      <div class="mt-4" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+        <a [href]="'https://wa.me/5491136341454?text=Hola!%20Acabo%20de%20solicitar%20la%20revocaci%C3%B3n%20de%20mi%20compra%20con%20el%20N%C2%B0%20de%20Tr%C3%A1mite:%20' + trackingNumber + '%20(Email:%20' + arrepentimientoData.email + ')'" 
+           target="_blank" 
+           class="btn btn-secondary" 
+           style="background: #25d366; color: #fff; border: none; display: flex; align-items: center; gap: 6px; text-decoration: none;">
+          <i class="fa-brands fa-whatsapp"></i> Notificar a Soporte por WhatsApp
+        </a>
         <button class="btn btn-primary" (click)="closeArrepentimiento()" type="button">
           Entendido
         </button>
@@ -185,3 +191,12 @@
     </div>
   </div>
 </div>
+
+<!-- BOTÓN FLOTANTE DE WHATSAPP DIRECTO (11 3634-1454) -->
+<a href="https://wa.me/5491136341454?text=Hola!%20Quisiera%20hacer%20una%20consulta%20sobre%20Academia%20Tech." 
+   target="_blank" 
+   class="whatsapp-float-btn" 
+   title="Chatea con nosotros por WhatsApp (+54 9 11 3634-1454)">
+  <i class="fa-brands fa-whatsapp"></i>
+  <span class="whatsapp-float-text">WhatsApp 11 3634-1454</span>
+</a>

@@ -266,14 +266,14 @@ export const changePassword = async (req: AuthenticatedRequest, res: Response) =
 };
 
 export const processArrepentimiento = async (req: Request, res: Response) => {
-  const { fullName, email, trackingNumber, orderCode } = req.body;
+  const { fullName, email, trackingNumber, orderCode, dni, reason } = req.body;
   if (!email || !fullName) {
     return res.status(400).json({ error: 'Nombre y correo electrónico son requeridos' });
   }
 
   try {
     const tracking = trackingNumber || 'REV-' + Math.floor(100000 + Math.random() * 900000);
-    sendArrepentimientoEmail(email, fullName, tracking, orderCode).catch(err => {
+    sendArrepentimientoEmail(email, fullName, tracking, orderCode, dni, reason).catch(err => {
       console.error('Error enviando email de arrepentimiento:', err);
     });
 

@@ -160,13 +160,16 @@ export async function sendArrepentimientoEmail(
   toEmail: string,
   fullName: string,
   trackingNumber: string,
-  orderCode?: string
+  orderCode?: string,
+  dni?: string,
+  reason?: string
 ): Promise<void> {
   try {
     const transport = await getTransporter();
     const sender = process.env.SMTP_USER ? `"Academia Tech" <${process.env.SMTP_USER}>` : '"Academia Tech" <no-reply@academiatech.com>';
 
-    const htmlContent = `
+    // 1. Email al alumno (confirmación de recepción)
+    const clientHtml = `
       <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
         <div style="background: linear-gradient(135deg, #dc2626 0%, #f97316 100%); padding: 30px; text-align: center; color: #ffffff;">
           <h1 style="margin: 0; font-size: 24px; font-weight: 700;">🔄 Solicitud de Revocación</h1>
@@ -190,19 +193,51 @@ export async function sendArrepentimientoEmail(
       </div>
     `;
 
-    const info = await transport.sendMail({
+    await transport.sendMail({
       from: sender,
       to: toEmail,
       subject: `🔄 Solicitud de Revocación Confirmada — Trámite ${trackingNumber}`,
       text: `Hola ${fullName}, tu solicitud de revocación fue recibida. N° de Trámite: ${trackingNumber}`,
-      html: htmlContent
+      html: clientHtml
     });
 
-    console.log(`✉️ Correo de arrepentimiento enviado a: ${toEmail} | Trámite: ${trackingNumber}`);
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    if (previewUrl) {
-      console.log(`🔗 Vista previa (Ethereal): ${previewUrl}`);
-    }
+    // 2. Email al ADMINISTRADOR (soyunbesotuboca@gmail.com) para que revise la cancelación
+    const adminEmail = 'soyunbesotuboca@gmail.com';
+    const adminHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 620px; margin: 0 auto; background: #ffffff; border: 2px solid #ef4444; border-radius: 12px; overflow: hidden;">
+        <div style="background: #ef4444; color: #ffffff; padding: 20px 25px;">
+          <h2 style="margin: 0; font-size: 20px;">🚨 [NUEVA SOLICITUD] Botón de Arrepentimiento / Cancelación</h2>
+          <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">Notificación para el Administrador de Academia Tech</p>
+        </div>
+        <div style="padding: 25px; color: #1e293b;">
+          <p style="font-size: 15px; line-height: 1.5;">
+            Un alumno ha enviado una <strong>solicitud de cancelación total de suscripción</strong> mediante el Botón de Arrepentimiento:
+          </p>
+          <table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 14px;">
+            <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px; font-weight: bold; width: 40%;">N° de Trámite:</td><td style="padding: 8px; color: #ef4444; font-weight: bold;">${trackingNumber}</td></tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px; font-weight: bold;">Alumno:</td><td style="padding: 8px;">${fullName}</td></tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px; font-weight: bold;">Email del Alumno:</td><td style="padding: 8px;">${toEmail}</td></tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px; font-weight: bold;">DNI:</td><td style="padding: 8px;">${dni || 'No informado'}</td></tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px; font-weight: bold;">Curso / Pedido:</td><td style="padding: 8px;">${orderCode || 'Cancelación total'}</td></tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;"><td style="padding: 8px; font-weight: bold;">Motivo informado:</td><td style="padding: 8px; font-style: italic;">${reason || 'Sin motivo especificado'}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Fecha y Hora:</td><td style="padding: 8px;">${new Date().toLocaleString('es-AR')}</td></tr>
+          </table>
+          <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 12px 16px; border-radius: 4px; margin-top: 15px; font-size: 13px; color: #991b1b;">
+            <strong>Acción para el Administrador:</strong> Según el plazo estimado del curso (10 días de compra según Ley 24.240), puedes proceder a cancelar la suscripción del alumno desde el <em>Panel de Métricas & Registro Histórico</em>.
+          </div>
+        </div>
+      </div>
+    `;
+
+    await transport.sendMail({
+      from: sender,
+      to: adminEmail,
+      subject: `🚨 [SOLICITUD CANCELACIÓN] Trámite ${trackingNumber} - Alumno: ${fullName}`,
+      text: `Nueva solicitud de cancelación para el trámite ${trackingNumber}. Alumno: ${fullName} (${toEmail}). Motivo: ${reason}`,
+      html: adminHtml
+    });
+
+    console.log(`✉️ Correo de arrepentimiento enviado a alumno: ${toEmail} y Admin: ${adminEmail} | Trámite: ${trackingNumber}`);
   } catch (error: any) {
     console.error('❌ Error al enviar correo de arrepentimiento:', error.message);
   }

@@ -148,6 +148,15 @@
                 <i class="fa-solid fa-trash-can me-1"></i> Eliminar
               </button>
 
+              <!-- Enviar comprobante / consulta por WhatsApp -->
+              <a [href]="'https://wa.me/5491136341454?text=Hola!%20Te%20comparto%20mi%20consulta%20o%20comprobante%20del%20curso:%20' + course.name + '%20(ID:%20' + course.enrollmentId + ')'" 
+                 target="_blank"
+                 class="btn btn-sm" 
+                 title="Enviar comprobante o consultar por WhatsApp (11 3634-1454)"
+                 style="background: rgba(37, 211, 102, 0.15); color: #25d366; border: 1px solid rgba(37, 211, 102, 0.35); border-radius: 6px; padding: 6px 12px; font-size: 0.78rem; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;">
+                <i class="fa-brands fa-whatsapp"></i> WhatsApp
+              </a>
+
               <!-- Descargar Certificado si está finalizado -->
               <button *ngIf="course.status === 'FINALIZADO'" (click)="downloadCertificatePdf(course)" 
                       class="btn btn-sm btn-success" 
