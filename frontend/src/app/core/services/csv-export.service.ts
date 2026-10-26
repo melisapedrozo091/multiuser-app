@@ -131,7 +131,8 @@ export class CsvExportService {
   }
 
   private downloadCsv(csvContent: string, filename: string): void {
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // \uFEFF (UTF-8 BOM) indica a Microsoft Excel que el archivo está en UTF-8, evitando caracteres raros (mojibake)
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { firebaseAdmin, hasFirebaseKey } from '../services/firebase.service';
+import { prisma } from '../prisma/client';
 
 export const JWT_SECRET = process.env.JWT_SECRET || 'multiuser-dev-jwt-secret-2026';
 
@@ -30,12 +31,15 @@ export async function firebaseAuthMiddleware(req: AuthenticatedRequest, res: Res
     if (hasFirebaseKey) {
       try {
         const decoded = await firebaseAdmin.auth().verifyIdToken(idToken);
+        const dbUser = decoded.email ? await prisma.user.findUnique({ where: { email: decoded.email } }) : null;
+        const role = dbUser?.role || (decoded as any).role || (decoded.email?.toLowerCase().includes('admin') ? 'ADMIN' : 'CLIENTE');
+
         req.user = {
           uid: decoded.uid,
           email: decoded.email,
-          displayName: decoded.name,
-          name: decoded.name,
-          role: (decoded as any).role || 'CLIENTE'
+          displayName: decoded.name || dbUser?.displayName,
+          name: decoded.name || dbUser?.displayName,
+          role
         };
         verified = true;
       } catch (fbTokenErr) {
@@ -47,12 +51,16 @@ export async function firebaseAuthMiddleware(req: AuthenticatedRequest, res: Res
     if (!verified) {
       try {
         const decoded = jwt.verify(idToken, JWT_SECRET) as any;
+        const email = decoded.email;
+        const dbUser = email ? await prisma.user.findUnique({ where: { email } }) : null;
+        const role = dbUser?.role || decoded.role || (email?.toLowerCase().includes('admin') ? 'ADMIN' : 'CLIENTE');
+
         req.user = {
           uid: decoded.uid || decoded.id,
-          email: decoded.email,
-          displayName: decoded.name || decoded.displayName,
-          name: decoded.name || decoded.displayName,
-          role: decoded.role || 'CLIENTE'
+          email,
+          displayName: decoded.name || decoded.displayName || dbUser?.displayName,
+          name: decoded.name || decoded.displayName || dbUser?.displayName,
+          role
         };
         verified = true;
       } catch (jwtErr) {

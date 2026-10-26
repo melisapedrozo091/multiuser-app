@@ -51,28 +51,7 @@ export class AuthService {
   }
 
   async login(email: string, password: string): Promise<User> {
-    const fbAuth = this.getFirebaseAuth();
-    if (fbAuth) {
-      try {
-        const cred = await signInWithEmailAndPassword(fbAuth, email, password);
-        const token = await cred.user.getIdToken();
-        sessionStorage.setItem('jwt_token', token);
-        const role = email.toLowerCase().includes('admin') ? 'ADMIN' : 'CLIENTE';
-        const user: User = {
-          id: cred.user.uid,
-          uid: cred.user.uid,
-          email: cred.user.email || email,
-          displayName: cred.user.displayName || email.split('@')[0],
-          role
-        };
-        sessionStorage.setItem('user_data', JSON.stringify(user));
-        this.currentUserSubject.next(user);
-        return user;
-      } catch (fbErr: any) {
-        console.warn('Firebase Auth directo no disponible o fallo de credenciales, intentando API backend:', fbErr?.message);
-      }
-    }
-
+    // 1. Siempre validar credenciales contra el backend (MySQL / phpMyAdmin)
     const res = await fetch(`${environment.apiBase}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -80,47 +59,31 @@ export class AuthService {
     });
 
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Fallo en autenticación');
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Credenciales inválidas o usuario no registrado');
     }
 
     const data = await res.json();
-    sessionStorage.setItem('jwt_token', data.token);
     const user: User = data.user;
+    sessionStorage.setItem('jwt_token', data.token);
     sessionStorage.setItem('user_data', JSON.stringify(user));
+
+    // 2. Sincronizar sesión en Firebase Client en segundo plano
+    const fbAuth = this.getFirebaseAuth();
+    if (fbAuth) {
+      try {
+        await signInWithEmailAndPassword(fbAuth, email, password);
+      } catch (fbErr: any) {
+        // Fallback no bloqueante si Firebase Client no tiene la contraseña
+      }
+    }
+
     this.currentUserSubject.next(user);
     return user;
   }
 
   async register(email: string, password: string, displayName: string, role: 'ADMIN' | 'CLIENTE'): Promise<User> {
-    const fbAuth = this.getFirebaseAuth();
-    if (fbAuth) {
-      try {
-        const cred = await createUserWithEmailAndPassword(fbAuth, email, password);
-        const token = await cred.user.getIdToken();
-        sessionStorage.setItem('jwt_token', token);
-        const user: User = {
-          id: cred.user.uid,
-          uid: cred.user.uid,
-          email: cred.user.email || email,
-          displayName: displayName || email.split('@')[0],
-          role
-        };
-        sessionStorage.setItem('user_data', JSON.stringify(user));
-        this.currentUserSubject.next(user);
-
-        fetch(`${environment.apiBase}/auth/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, displayName, role })
-        }).catch(() => {});
-
-        return user;
-      } catch (fbErr: any) {
-        console.warn('Firebase Auth register no disponible, intentando API backend:', fbErr?.message);
-      }
-    }
-
+    // 1. Siempre registrar y persistir primero en el backend (MySQL / phpMyAdmin)
     const res = await fetch(`${environment.apiBase}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -128,11 +91,22 @@ export class AuthService {
     });
 
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Fallo en registro');
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Fallo en registro en la base de datos');
     }
 
     const data = await res.json();
+
+    // 2. Intentar autenticar/registrar también en Firebase Auth en segundo plano
+    const fbAuth = this.getFirebaseAuth();
+    if (fbAuth) {
+      try {
+        await createUserWithEmailAndPassword(fbAuth, email, password);
+      } catch (fbErr: any) {
+        console.warn('Firebase Auth sync warning:', fbErr?.message);
+      }
+    }
+
     sessionStorage.setItem('jwt_token', data.token);
     const user: User = data.user;
     sessionStorage.setItem('user_data', JSON.stringify(user));
