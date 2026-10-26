@@ -8,6 +8,8 @@ import { PdfExportService } from '../../../core/services/pdf-export.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { EnrollmentService, Enrollment } from '../../../core/services/enrollment.service';
 import { FirebaseService, FirestoreEnrollment } from '../../../core/services/firebase.service';
+import { ReviewService } from '../../../core/services/review.service';
+import { CourseReview } from '../../../core/models/app-models';
 import { environment } from '../../../../environments/environment';
 import { Chart, registerables } from 'chart.js';
 import { Subscription } from 'rxjs';
@@ -24,6 +26,7 @@ Chart.register(...registerables);
 export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewInit {
   metrics: DashboardMetrics | null = null;
   enrollments: Enrollment[] = [];
+  reviews: CourseReview[] = [];
   loading = true;
   error: string | null = null;
   showDeleted = false;
@@ -32,6 +35,7 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
   isFirestoreConnected = false;
 
   public enrollmentService = inject(EnrollmentService);
+  public reviewService = inject(ReviewService);
   public auth = inject(AuthService);
   private adminService = inject(AdminService);
   public csvExport = inject(CsvExportService);
@@ -78,22 +82,29 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
     this.error = null;
 
     try {
-      // Strategy: Try Firestore first (real-time), then REST API, then localStorage
       if (this.firebaseService.isConnected) {
         this.setupFirestoreRealtime();
       }
 
-      // Also load from DB REST API
+      // 1. Cargar reseñas reales de la base de datos MySQL (CourseReview)
+      try {
+        this.reviews = await this.reviewService.getReviews();
+      } catch (revErr) {
+        console.warn('Error al cargar reseñas:', revErr);
+        this.reviews = [];
+      }
+
+      // 2. Cargar todas las inscripciones reales de la base de datos (all=true para métricas globales)
       await this.loadEnrollmentsFromDB();
 
-      // Then try to get aggregated metrics from admin API
+      // 3. Cargar métricas agregadas desde la API del backend
       try {
         this.metrics = await this.adminService.getMetrics();
       } catch {
         this.metrics = this.computeMetricsFromEnrollments();
       }
 
-      // Override metrics with real enrollment data
+      // 4. Calcular métricas en tiempo real con las inscripciones y reseñas reales
       this.calculateRealTimeMetrics();
     } catch (err: any) {
       this.error = 'Error al cargar datos. Usando datos locales.';
@@ -101,7 +112,6 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
       this.metrics = this.computeMetricsFromEnrollments();
     } finally {
       this.loading = false;
-      // Use a small delay to ensure the view has rendered the canvas elements
       setTimeout(() => this.renderAllCharts(), 100);
     }
   }
@@ -118,7 +128,6 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
     this.firestoreSub = this.firebaseService.enrollments$.subscribe((firestoreData) => {
       if (firestoreData.length === 0) return;
 
-      // Convert Firestore data to local Enrollment format
       this.ngZone.run(() => {
         const converted: Enrollment[] = firestoreData.map((fe) => ({
           id: fe.code || fe.id || '',
@@ -147,11 +156,8 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
           this.enrollments = converted;
         }
 
-        // Recalculate metrics in real-time
         this.metrics = this.computeMetricsFromEnrollments();
         this.calculateRealTimeMetrics();
-
-        // Update charts with animation
         this.updateChartsData();
       });
     });
@@ -167,11 +173,11 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const res = await fetch(`${environment.apiBase}/enrollments`, { headers });
+      // Pedir todas las inscripciones (all=true) para las métricas globales del administrador
+      const res = await fetch(`${environment.apiBase}/enrollments?all=true`, { headers });
       if (res.ok) {
         const dbEnrollments: Enrollment[] = await res.json();
-        if (dbEnrollments && dbEnrollments.length > 0) {
-          // Store in local service memory for this session
+        if (dbEnrollments && Array.isArray(dbEnrollments)) {
           this.enrollments = this.showDeleted
             ? dbEnrollments
             : dbEnrollments.filter(e => !e.deletedFromUi && e.status !== 'ELIMINADO');
@@ -179,10 +185,9 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
         }
       }
     } catch {
-      // fall through to localStorage
+      // Fall through to localStorage
     }
 
-    // Fallback to localStorage
     this.enrollments = this.enrollmentService.getAllEnrollments(this.showDeleted);
   }
 
@@ -192,21 +197,29 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
     const inProgress = all.filter(e => e.status === 'EN_CURSO').length;
     const enrolled = all.filter(e => e.status === 'INSCRIPTO').length;
     const canceled = all.filter(e => e.status === 'ANULADO').length;
+    const paused = all.filter(e => e.status === 'PAUSADO').length;
     const uniqueStudents = new Set(all.map(e => e.userEmail?.toLowerCase())).size;
     const totalRevenue = all.reduce((sum, e) => sum + (e.price || 0), 0);
-    const validCount = completed + inProgress + enrolled;
-    const satisfactionRate = all.length > 0
-      ? Math.round((validCount / all.length) * 100 * 10) / 10
-      : 98.4;
+
+    // Calcular satisfacción real desde las reseñas cargadas
+    const revCount = this.reviews.length;
+    const avgRating = revCount > 0
+      ? (this.reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / revCount)
+      : 5.0;
+    const satisfactionRate = Math.round((avgRating / 5) * 100 * 10) / 10;
 
     return {
-      totalClients: Math.max(uniqueStudents, 2),
+      totalClients: Math.max(uniqueStudents, 1),
       totalAdmins: 1,
       totalCourses: 8,
       totalForumQueries: 3,
+      totalReviews: revCount,
+      averageRating: Number(avgRating.toFixed(1)),
       coursesInProgress: inProgress,
       coursesCompleted: completed,
       coursesCanceled: canceled,
+      coursesPaused: paused,
+      coursesEnrolled: enrolled,
       clientSatisfactionRate: satisfactionRate,
       totalRevenueUsd: Math.round(totalRevenue * 100) / 100,
       topDemandedCourses: []
@@ -219,12 +232,16 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
     const inProgress = all.filter(e => e.status === 'EN_CURSO').length;
     const enrolled = all.filter(e => e.status === 'INSCRIPTO').length;
     const canceled = all.filter(e => e.status === 'ANULADO').length;
+    const paused = all.filter(e => e.status === 'PAUSADO').length;
     const uniqueStudents = new Set(all.map(e => (e.userEmail || '').toLowerCase())).size;
     const totalRevenue = all.reduce((sum, e) => sum + (e.price || 0), 0);
-    const validCount = completed + inProgress + enrolled;
-    const satisfactionRate = all.length > 0
-      ? Math.round((validCount / all.length) * 100 * 10) / 10
-      : 98.4;
+
+    // Calcular satisfacción real desde las reseñas reales en la BD
+    const revCount = this.reviews.length;
+    const avgRating = revCount > 0
+      ? (this.reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / revCount)
+      : 5.0;
+    const satisfactionRate = Math.round((avgRating / 5) * 100 * 10) / 10;
 
     const courseCountMap = new Map<string, { id: number; name: string; price: number; count: number }>();
     all.forEach(e => {
@@ -236,20 +253,30 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
     const topDemanded = Array.from(courseCountMap.values())
       .sort((a, b) => b.count - a.count)
       .slice(0, 5)
-      .map((c, i) => ({
-        id: c.id,
-        name: c.name,
-        price: c.price,
-        rating: (5.0 - (i * 0.1)).toFixed(1),
-        enrolledCount: c.count,
-        satisfaction: `${Math.min(100, 99 - i * 2)}%`
-      }));
+      .map((c) => {
+        const cReviews = this.reviews.filter(r => r.courseId === c.id || r.courseName.toLowerCase() === c.name.toLowerCase());
+        const courseAvg = cReviews.length > 0
+          ? (cReviews.reduce((sum, r) => sum + r.rating, 0) / cReviews.length).toFixed(1)
+          : '5.0';
+        return {
+          id: c.id,
+          name: c.name,
+          price: c.price,
+          rating: courseAvg,
+          enrolledCount: c.count,
+          satisfaction: `${Math.round((Number(courseAvg) / 5) * 100)}%`
+        };
+      });
 
     if (this.metrics) {
-      this.metrics.totalClients = Math.max(this.metrics.totalClients, uniqueStudents, 2);
+      this.metrics.totalClients = Math.max(this.metrics.totalClients, uniqueStudents, 1);
       this.metrics.coursesCompleted = completed;
       this.metrics.coursesInProgress = inProgress;
       this.metrics.coursesCanceled = canceled;
+      this.metrics.coursesPaused = paused;
+      this.metrics.coursesEnrolled = enrolled;
+      this.metrics.totalReviews = revCount;
+      this.metrics.averageRating = Number(avgRating.toFixed(1));
       this.metrics.clientSatisfactionRate = satisfactionRate;
       this.metrics.totalRevenueUsd = Math.round(totalRevenue * 100) / 100;
       if (topDemanded.length > 0) {
@@ -300,20 +327,22 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
       this.chart1.update('active');
     }
 
-    // Update Pie chart
+    // Update Pie chart con reseñas reales de la base de datos MySQL
     if (this.chart2) {
-      const excelente = (completed * 3) + 5;
-      const muyBueno = (inProgress * 2) + 2;
-      const bueno = enrolled + 1;
-      const regular = Math.max(canceled, 1);
+      const s5 = this.reviews.filter(r => r.rating === 5).length;
+      const s4 = this.reviews.filter(r => r.rating === 4).length;
+      const s3 = this.reviews.filter(r => r.rating === 3).length;
+      const s2 = this.reviews.filter(r => r.rating === 2).length;
+      const s1 = this.reviews.filter(r => r.rating === 1).length;
 
       this.chart2.data.labels = [
-        `⭐⭐⭐⭐⭐ Excelente (${excelente})`,
-        `⭐⭐⭐⭐ Muy Bueno (${muyBueno})`,
-        `⭐⭐⭐ Bueno (${bueno})`,
-        `⭐⭐ Regular (${regular})`
+        `⭐⭐⭐⭐⭐ 5 Estrellas (${s5})`,
+        `⭐⭐⭐⭐ 4 Estrellas (${s4})`,
+        `⭐⭐⭐ 3 Estrellas (${s3})`,
+        `⭐⭐ 2 Estrellas (${s2})`,
+        `⭐ 1 Estrella (${s1})`
       ];
-      this.chart2.data.datasets[0].data = [excelente, muyBueno, bueno, regular];
+      this.chart2.data.datasets[0].data = [s5, s4, s3, s2, s1];
       this.chart2.update('active');
     }
 
@@ -405,33 +434,31 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
     const canvas = this.pieCanvasRef?.nativeElement;
     if (!canvas) return;
 
-    const all = this.enrollments;
-    const completed = all.filter(e => e.status === 'FINALIZADO').length;
-    const inProgress = all.filter(e => e.status === 'EN_CURSO').length;
-    const enrolled = all.filter(e => e.status === 'INSCRIPTO').length;
-    const canceled = all.filter(e => e.status === 'ANULADO').length;
-
-    const excelente = (completed * 3) + 5;
-    const muyBueno = (inProgress * 2) + 2;
-    const bueno = enrolled + 1;
-    const regular = Math.max(canceled, 1);
+    // Conteo real de estrellas desde la base de datos MySQL (CourseReview)
+    const s5 = this.reviews.filter(r => r.rating === 5).length;
+    const s4 = this.reviews.filter(r => r.rating === 4).length;
+    const s3 = this.reviews.filter(r => r.rating === 3).length;
+    const s2 = this.reviews.filter(r => r.rating === 2).length;
+    const s1 = this.reviews.filter(r => r.rating === 1).length;
 
     this.chart2 = new Chart(canvas, {
       type: 'pie',
       data: {
         labels: [
-          `⭐⭐⭐⭐⭐ Excelente (${excelente})`,
-          `⭐⭐⭐⭐ Muy Bueno (${muyBueno})`,
-          `⭐⭐⭐ Bueno (${bueno})`,
-          `⭐⭐ Regular (${regular})`
+          `⭐⭐⭐⭐⭐ 5 Estrellas (${s5})`,
+          `⭐⭐⭐⭐ 4 Estrellas (${s4})`,
+          `⭐⭐⭐ 3 Estrellas (${s3})`,
+          `⭐⭐ 2 Estrellas (${s2})`,
+          `⭐ 1 Estrella (${s1})`
         ],
         datasets: [{
-          data: [excelente, muyBueno, bueno, regular],
+          data: [s5, s4, s3, s2, s1],
           backgroundColor: [
+            'rgba(16, 185, 129, 0.85)',
             'rgba(59, 130, 246, 0.85)',
-            'rgba(139, 92, 246, 0.85)',
-            'rgba(236, 72, 153, 0.85)',
-            'rgba(249, 115, 22, 0.85)'
+            'rgba(245, 158, 11, 0.85)',
+            'rgba(249, 115, 22, 0.85)',
+            'rgba(239, 68, 68, 0.85)'
           ],
           borderWidth: 3,
           borderColor: '#0f172a',
@@ -490,6 +517,7 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
           {
             label: 'Ingresos (USD)',
             data: monthlyData.revenue,
+            yAxisID: 'y',
             backgroundColor: 'rgba(99, 102, 241, 0.7)',
             borderColor: 'rgba(99, 102, 241, 1)',
             borderWidth: 2,
@@ -499,6 +527,7 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
           {
             label: 'Inscripciones',
             data: monthlyData.count,
+            yAxisID: 'y1',
             backgroundColor: 'rgba(16, 185, 129, 0.7)',
             borderColor: 'rgba(16, 185, 129, 1)',
             borderWidth: 2,
@@ -524,11 +553,38 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
             ticks: { color: '#94a3b8', font: { family: 'Inter, sans-serif' } }
           },
           y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
             grid: { color: 'rgba(255,255,255,0.05)' },
             ticks: {
-              color: '#94a3b8',
+              color: '#818cf8',
               font: { family: 'Inter, sans-serif' },
               callback: (value) => `$${value}`
+            },
+            title: {
+              display: true,
+              text: 'Ingresos (USD)',
+              color: '#818cf8',
+              font: { family: 'Inter, sans-serif', size: 11, weight: 'bold' }
+            }
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            grid: { drawOnChartArea: false },
+            ticks: {
+              color: '#34d399',
+              font: { family: 'Inter, sans-serif' },
+              stepSize: 1,
+              precision: 0
+            },
+            title: {
+              display: true,
+              text: 'Cant. Inscripciones',
+              color: '#34d399',
+              font: { family: 'Inter, sans-serif', size: 11, weight: 'bold' }
             }
           }
         },
@@ -583,7 +639,16 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
       labels.push(`${monthNames[month]} ${year}`);
 
       const monthEnrollments = this.enrollments.filter(e => {
-        const enrollDate = e.createdAt ? new Date(e.createdAt) : this.parseDate(e.date);
+        let enrollDate: Date;
+        if (e.createdAt) {
+          enrollDate = new Date(e.createdAt);
+        } else if (e.date) {
+          enrollDate = this.parseDate(e.date);
+        } else {
+          return false;
+        }
+
+        if (isNaN(enrollDate.getTime())) return false;
         return enrollDate.getMonth() === month && enrollDate.getFullYear() === year;
       });
 
@@ -595,6 +660,7 @@ export class MetricsDashboardComponent implements OnInit, OnDestroy, AfterViewIn
   }
 
   private parseDate(dateStr: string): Date {
+    if (!dateStr) return new Date();
     // Handle dd/mm/yyyy format
     const parts = dateStr.split('/');
     if (parts.length === 3) {

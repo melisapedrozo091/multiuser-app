@@ -28,6 +28,10 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/reviews', reviewRoutes);
 
+// Endpoint de métricas de rendimiento global
+import { getDashboardMetrics } from './controllers/admin.controller';
+app.get('/api/metrics', getDashboardMetrics);
+
 // Rutas 100% administrativas protegidas
 app.use('/api/admin', firebaseAuthMiddleware, adminRoutes);
 

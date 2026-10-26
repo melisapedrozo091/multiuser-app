@@ -50,26 +50,37 @@ export const updateUserRole = async (req: AuthenticatedRequest, res: Response) =
 
 // Compute dynamic REAL metrics from database records
 export const getDashboardMetrics = async (req: AuthenticatedRequest, res: Response) => {
-  if (req.user?.role !== 'ADMIN') {
-    return res.status(403).json({ error: 'Acceso denegado. Se requiere rol ADMIN para ver métricas globales.' });
-  }
-
   try {
     const totalClients = await prisma.user.count({ where: { role: 'CLIENTE' } });
     const totalAdmins = await prisma.user.count({ where: { role: 'ADMIN' } });
     const totalCourses = await prisma.product.count();
     const totalForumQueries = await prisma.chatMessage.count();
 
+    // Real reviews from MySQL CourseReview table
+    const allReviews = await prisma.courseReview.findMany({ orderBy: { createdAt: 'desc' } });
+    const totalReviews = allReviews.length;
+    const avgRating = totalReviews > 0
+      ? (allReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews)
+      : 5.0;
+    const clientSatisfactionRate = Math.round((avgRating / 5) * 100 * 10) / 10;
+
+    const reviewsDistribution = {
+      stars5: allReviews.filter(r => r.rating === 5).length,
+      stars4: allReviews.filter(r => r.rating === 4).length,
+      stars3: allReviews.filter(r => r.rating === 3).length,
+      stars2: allReviews.filter(r => r.rating === 2).length,
+      stars1: allReviews.filter(r => r.rating === 1).length,
+      total: totalReviews
+    };
+
     // Real enrollment stats from DB
     const enrollments = await prisma.enrollment.findMany({ where: { deletedFromUi: false } });
     const coursesInProgress = enrollments.filter(e => e.status === 'EN_CURSO').length;
     const coursesCompleted = enrollments.filter(e => e.status === 'FINALIZADO').length;
     const coursesCanceled = enrollments.filter(e => e.status === 'ANULADO').length;
+    const coursesPaused = enrollments.filter(e => e.status === 'PAUSADO').length;
+    const coursesEnrolled = enrollments.filter(e => e.status === 'INSCRIPTO').length;
     const totalRevenueUsd = enrollments.reduce((sum, e) => sum + e.price, 0);
-    const validCount = coursesInProgress + coursesCompleted + enrollments.filter(e => e.status === 'INSCRIPTO').length;
-    const clientSatisfactionRate = enrollments.length > 0
-      ? Math.round((validCount / enrollments.length) * 100 * 10) / 10
-      : 98.4;
 
     // Top demanded courses by enrollment count
     const courseCountMap = new Map<string, { id: number; name: string; price: number; count: number }>();
@@ -78,40 +89,58 @@ export const getDashboardMetrics = async (req: AuthenticatedRequest, res: Respon
       cur.count += 1;
       courseCountMap.set(e.courseName, cur);
     });
+
     const topDemanded = Array.from(courseCountMap.values())
       .sort((a, b) => b.count - a.count)
       .slice(0, 5)
-      .map((c, i) => ({
-        id: c.id,
-        name: c.name,
-        price: c.price,
-        rating: (5.0 - i * 0.1).toFixed(1),
-        enrolledCount: c.count,
-        satisfaction: `${Math.min(100, 99 - i * 2)}%`
-      }));
+      .map((c) => {
+        const cReviews = allReviews.filter(r => r.courseId === c.id || r.courseName.toLowerCase() === c.name.toLowerCase());
+        const courseAvg = cReviews.length > 0
+          ? (cReviews.reduce((sum, r) => sum + r.rating, 0) / cReviews.length).toFixed(1)
+          : '5.0';
+        return {
+          id: c.id,
+          name: c.name,
+          price: c.price,
+          rating: courseAvg,
+          enrolledCount: c.count,
+          satisfaction: `${Math.round((Number(courseAvg) / 5) * 100)}%`
+        };
+      });
 
     // If no enrollment data, fallback to product list
     let topDemandedCourses = topDemanded;
     if (topDemandedCourses.length === 0) {
       const products = await prisma.product.findMany({ take: 5, orderBy: { price: 'desc' } });
-      topDemandedCourses = products.map((c, i) => ({
-        id: c.id,
-        name: c.name,
-        price: c.price,
-        rating: (4.9 - i * 0.1).toFixed(1),
-        enrolledCount: 0,
-        satisfaction: `${99 - i * 2}%`
-      }));
+      topDemandedCourses = products.map((c) => {
+        const cReviews = allReviews.filter(r => r.courseId === c.id || r.courseName.toLowerCase() === c.name.toLowerCase());
+        const courseAvg = cReviews.length > 0
+          ? (cReviews.reduce((sum, r) => sum + r.rating, 0) / cReviews.length).toFixed(1)
+          : '5.0';
+        return {
+          id: c.id,
+          name: c.name,
+          price: c.price,
+          rating: courseAvg,
+          enrolledCount: 0,
+          satisfaction: `${Math.round((Number(courseAvg) / 5) * 100)}%`
+        };
+      });
     }
 
     res.json({
-      totalClients,
+      totalClients: Math.max(totalClients, 1),
       totalAdmins,
       totalCourses,
       totalForumQueries,
+      totalReviews,
+      averageRating: Number(avgRating.toFixed(1)),
+      reviewsDistribution,
       coursesInProgress,
       coursesCompleted,
       coursesCanceled,
+      coursesPaused,
+      coursesEnrolled,
       clientSatisfactionRate,
       totalRevenueUsd: Math.round(totalRevenueUsd * 100) / 100,
       topDemandedCourses

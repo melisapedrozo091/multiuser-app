@@ -88,7 +88,7 @@
           <i class="fa-solid fa-star"></i>
         </div>
         <div>
-          <span style="font-size: 0.8rem; color: #94a3b8; display: block;">Satisfacción</span>
+          <span style="font-size: 0.8rem; color: #94a3b8; display: block;">Satisfacción ({{ reviews.length }} reseñas)</span>
           <span style="font-size: 1.7rem; font-weight: 700; color: #fff;">{{ metrics.clientSatisfactionRate }}%</span>
         </div>
       </div>
@@ -102,7 +102,7 @@
           <i class="fa-solid fa-chart-pie text-success"></i> Estado Global de Cursos & Inscripciones
         </h3>
         <p style="color: #94a3b8; font-size: 0.82rem; margin-bottom: 15px;">
-          Distribución de alumnos por avance (Finalizados, En Curso, Inscriptos y Anulados)
+          Distribución de {{ enrollments.length }} inscripciones activas en la base de datos
         </p>
         <div style="position: relative; height: 280px; width: 100%;">
           <canvas #doughnutCanvas></canvas>
@@ -115,7 +115,7 @@
           <i class="fa-solid fa-star text-warning"></i> Nivel de Satisfacción de Alumnos
         </h3>
         <p style="color: #94a3b8; font-size: 0.82rem; margin-bottom: 15px;">
-          Distribución porcentual de calificaciones otorgadas por los alumnos
+          Distribución real de las {{ reviews.length }} reseñas registradas en la base de datos
         </p>
         <div style="position: relative; height: 280px; width: 100%;">
           <canvas #pieCanvas></canvas>

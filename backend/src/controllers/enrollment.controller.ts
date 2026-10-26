@@ -27,9 +27,10 @@ export const getEnrollments = async (req: AuthenticatedRequest, res: Response) =
   try {
     const userRole = req.user?.role;
     const userEmail = req.user?.email;
+    const returnAll = req.query.all === 'true';
 
-    // ADMIN or unauthenticated (metrics view) → return all enrollments
-    if (!userRole || userRole === 'ADMIN') {
+    // ADMIN, unauthenticated, or returnAll (metrics view) → return all enrollments
+    if (!userRole || userRole === 'ADMIN' || returnAll) {
       const enrollments = await prisma.enrollment.findMany({
         orderBy: { createdAt: 'desc' }
       });

@@ -7,9 +7,21 @@ export interface DashboardMetrics {
   totalAdmins: number;
   totalCourses: number;
   totalForumQueries: number;
+  totalReviews?: number;
+  averageRating?: number;
+  reviewsDistribution?: {
+    stars5: number;
+    stars4: number;
+    stars3: number;
+    stars2: number;
+    stars1: number;
+    total: number;
+  };
   coursesInProgress: number;
   coursesCompleted: number;
   coursesCanceled: number;
+  coursesPaused?: number;
+  coursesEnrolled?: number;
   clientSatisfactionRate: number;
   totalRevenueUsd: number;
   topDemandedCourses: {
@@ -35,7 +47,7 @@ export class AdminService {
   }
 
   async getMetrics(): Promise<DashboardMetrics> {
-    const res = await fetch(`${environment.apiBase}/admin/metrics`, {
+    const res = await fetch(`${environment.apiBase}/metrics`, {
       headers: this.getHeaders()
     });
     if (!res.ok) {
