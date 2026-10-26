@@ -195,23 +195,24 @@ export class ProductListComponent implements OnInit {
     this.faqs[index].open = !this.faqs[index].open;
   }
 
+  get categoryProducts(): Product[] {
+    if (this.selectedCategory === 'TODOS') {
+      return this.products;
+    }
+    return this.products.filter(p => {
+      const name = (p.name || '').toLowerCase();
+      if (this.selectedCategory === 'FULLSTACK') return name.includes('fullstack') || name.includes('web');
+      if (this.selectedCategory === 'TYPESCRIPT') return name.includes('typescript') || name.includes('código');
+      if (this.selectedCategory === 'DEVOPS') return name.includes('devops') || name.includes('docker');
+      if (this.selectedCategory === 'IA') return name.includes('inteligencia') || name.includes('ia');
+      if (this.selectedCategory === 'SEGURIDAD') return name.includes('seguridad') || name.includes('auth');
+      return true;
+    });
+  }
+
   get filteredProducts(): Product[] {
     const filterPipe = new FilterPipe();
-    let list = filterPipe.transform(this.products, this.searchText, ['name', 'description']);
-
-    if (this.selectedCategory !== 'TODOS') {
-      list = list.filter(p => {
-        const name = p.name.toLowerCase();
-        if (this.selectedCategory === 'FULLSTACK') return name.includes('fullstack') || name.includes('web');
-        if (this.selectedCategory === 'TYPESCRIPT') return name.includes('typescript') || name.includes('código');
-        if (this.selectedCategory === 'DEVOPS') return name.includes('devops') || name.includes('docker');
-        if (this.selectedCategory === 'IA') return name.includes('inteligencia') || name.includes('ia');
-        if (this.selectedCategory === 'SEGURIDAD') return name.includes('seguridad') || name.includes('auth');
-        return true;
-      });
-    }
-
-    return list;
+    return filterPipe.transform(this.categoryProducts, this.searchText, ['name', 'description']);
   }
 
   private readonly DELETED_PRODUCTS_KEY = 'deleted_courses_front_ids';

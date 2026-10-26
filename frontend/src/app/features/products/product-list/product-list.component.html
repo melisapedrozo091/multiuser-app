@@ -81,7 +81,7 @@
   <!-- COURSES GRID -->
   <div class="products-grid" *ngIf="!loading">
     <app-product-card
-      *ngFor="let prod of filteredProducts"
+      *ngFor="let prod of (categoryProducts | filter:searchText:['name', 'description'])"
       [product]="prod"
       [isAdmin]="isAdmin"
       (buy)="onBuyProduct($event)"
@@ -93,7 +93,7 @@
   </div>
 
   <!-- EMPTY STATE -->
-  <div class="empty-state card" *ngIf="!loading && filteredProducts.length === 0">
+  <div class="empty-state card" *ngIf="!loading && (categoryProducts | filter:searchText:['name', 'description']).length === 0">
     <p>No se encontraron cursos que coincidan con la búsqueda seleccionada.</p>
   </div>
 

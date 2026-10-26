@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { User } from '../models/app-models';
 import { environment } from '../../../environments/environment';
+import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as fbSignOut, Auth } from 'firebase/auth';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -21,7 +23,45 @@ export class AuthService {
     return localStorage.getItem('jwt_token');
   }
 
+  private getFirebaseAuth(): Auth | null {
+    try {
+      if (
+        !environment.firebase ||
+        !environment.firebase.apiKey ||
+        environment.firebase.apiKey.startsWith('YOUR_')
+      ) {
+        return null;
+      }
+      const app = getApps().length > 0 ? getApp() : initializeApp(environment.firebase);
+      return getAuth(app);
+    } catch {
+      return null;
+    }
+  }
+
   async login(email: string, password: string): Promise<User> {
+    const fbAuth = this.getFirebaseAuth();
+    if (fbAuth) {
+      try {
+        const cred = await signInWithEmailAndPassword(fbAuth, email, password);
+        const token = await cred.user.getIdToken();
+        localStorage.setItem('jwt_token', token);
+        const role = email.toLowerCase().includes('admin') ? 'ADMIN' : 'CLIENTE';
+        const user: User = {
+          id: cred.user.uid,
+          uid: cred.user.uid,
+          email: cred.user.email || email,
+          displayName: cred.user.displayName || email.split('@')[0],
+          role
+        };
+        localStorage.setItem('user_data', JSON.stringify(user));
+        this.currentUserSubject.next(user);
+        return user;
+      } catch (fbErr: any) {
+        console.warn('Firebase Auth directo no disponible o fallo de credenciales, intentando API backend:', fbErr?.message);
+      }
+    }
+
     const res = await fetch(`${environment.apiBase}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -42,6 +82,34 @@ export class AuthService {
   }
 
   async register(email: string, password: string, displayName: string, role: 'ADMIN' | 'CLIENTE'): Promise<User> {
+    const fbAuth = this.getFirebaseAuth();
+    if (fbAuth) {
+      try {
+        const cred = await createUserWithEmailAndPassword(fbAuth, email, password);
+        const token = await cred.user.getIdToken();
+        localStorage.setItem('jwt_token', token);
+        const user: User = {
+          id: cred.user.uid,
+          uid: cred.user.uid,
+          email: cred.user.email || email,
+          displayName: displayName || email.split('@')[0],
+          role
+        };
+        localStorage.setItem('user_data', JSON.stringify(user));
+        this.currentUserSubject.next(user);
+
+        fetch(`${environment.apiBase}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, displayName, role })
+        }).catch(() => {});
+
+        return user;
+      } catch (fbErr: any) {
+        console.warn('Firebase Auth register no disponible, intentando API backend:', fbErr?.message);
+      }
+    }
+
     const res = await fetch(`${environment.apiBase}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -62,6 +130,10 @@ export class AuthService {
   }
 
   logout(): void {
+    const fbAuth = this.getFirebaseAuth();
+    if (fbAuth) {
+      fbSignOut(fbAuth).catch(() => {});
+    }
     localStorage.removeItem('jwt_token');
     localStorage.removeItem('user_data');
     this.currentUserSubject.next(null);
