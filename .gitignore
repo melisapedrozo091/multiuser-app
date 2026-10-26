@@ -6,6 +6,8 @@ dist/
 # Environment variables & secrets
 .env
 firebase-service-key.json
+backend/firebase-service-key.json
+**/firebase-service-key.json
 *.pem
 *.db
 *.db-journal
