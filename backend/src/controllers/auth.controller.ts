@@ -10,30 +10,21 @@ import { sendWelcomeEmail, sendPasswordResetEmail, sendArrepentimientoEmail } fr
 export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
   try {
-    if (hasFirebaseKey) {
-      const userRecord = await firebaseAdmin.auth().getUserByEmail(email);
-      const dbUser = await prisma.user.findUnique({ where: { email } });
-      const role = dbUser?.role || 'CLIENTE';
-      const customToken = await firebaseAdmin.auth().createCustomToken(userRecord.uid, { role });
-      return res.json({ token: customToken, user: { id: userRecord.uid, uid: userRecord.uid, email, role, displayName: dbUser?.displayName } });
-    }
-
-    // Local dev mode without Firebase service key
+    // 1. Verify user in MySQL database first
     const dbUser = await prisma.user.findUnique({ where: { email } });
     if (!dbUser) {
       return res.status(401).json({ error: 'Credenciales inválidas o usuario no registrado' });
     }
 
-    // Verify stored password using bcrypt (with legacy plaintext fallback & auto-migration)
+    // 2. Verify stored password using bcrypt (with plaintext fallback for seeds)
     let isPasswordValid = false;
     if (dbUser.password) {
       if (dbUser.password.startsWith('$2a$') || dbUser.password.startsWith('$2b$')) {
         isPasswordValid = await bcrypt.compare(password, dbUser.password);
       } else {
-        // Plaintext comparison fallback
         isPasswordValid = (dbUser.password === password);
         if (isPasswordValid) {
-          // Auto-migrate legacy password to bcrypt hash
+          // Auto-migrate plaintext to bcrypt hash
           const hashed = await bcrypt.hash(password, 10);
           await prisma.user.update({
             where: { id: dbUser.id },
@@ -47,6 +38,29 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Contraseña incorrecta' });
     }
 
+    // 3. Optional: sync/create user in Firebase Auth if key exists
+    let firebaseCustomToken: string | null = null;
+    if (hasFirebaseKey) {
+      try {
+        let userRecord;
+        try {
+          userRecord = await firebaseAdmin.auth().getUserByEmail(email);
+        } catch {
+          userRecord = await firebaseAdmin.auth().createUser({
+            uid: dbUser.id,
+            email: dbUser.email,
+            displayName: dbUser.displayName || undefined,
+            password: password.length >= 6 ? password : undefined
+          });
+        }
+        await firebaseAdmin.auth().setCustomUserClaims(userRecord.uid, { role: dbUser.role });
+        firebaseCustomToken = await firebaseAdmin.auth().createCustomToken(userRecord.uid, { role: dbUser.role });
+      } catch (fbSyncErr: any) {
+        console.warn('Firebase user sync non-blocking warning:', fbSyncErr?.message);
+      }
+    }
+
+    // 4. Generate local JWT token (valid for all endpoints)
     const token = jwt.sign(
       { uid: dbUser.id, email: dbUser.email, role: dbUser.role },
       JWT_SECRET,
@@ -55,10 +69,17 @@ export const login = async (req: Request, res: Response) => {
 
     return res.json({
       token,
-      user: { id: dbUser.id, uid: dbUser.id, email: dbUser.email, role: dbUser.role, displayName: dbUser.displayName }
+      firebaseToken: firebaseCustomToken,
+      user: {
+        id: dbUser.id,
+        uid: dbUser.id,
+        email: dbUser.email,
+        role: dbUser.role,
+        displayName: dbUser.displayName
+      }
     });
   } catch (error: any) {
-    return res.status(401).json({ error: 'Credenciales inválidas o usuario no registrado', details: error.message });
+    return res.status(401).json({ error: 'Error de autenticación', details: error.message });
   }
 };
 

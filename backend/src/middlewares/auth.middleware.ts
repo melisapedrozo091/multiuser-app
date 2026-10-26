@@ -24,25 +24,46 @@ export async function firebaseAuthMiddleware(req: AuthenticatedRequest, res: Res
   const idToken = authHeader.split('Bearer ')[1];
 
   try {
+    let verified = false;
+
+    // 1. Try Firebase Token if key is present
     if (hasFirebaseKey) {
-      const decoded = await firebaseAdmin.auth().verifyIdToken(idToken);
-      req.user = {
-        uid: decoded.uid,
-        email: decoded.email,
-        displayName: decoded.name,
-        name: decoded.name,
-        role: (decoded as any).role || 'CLIENTE'
-      };
-    } else {
-      const decoded = jwt.verify(idToken, JWT_SECRET) as any;
-      req.user = {
-        uid: decoded.uid || decoded.id,
-        email: decoded.email,
-        displayName: decoded.name || decoded.displayName,
-        name: decoded.name || decoded.displayName,
-        role: decoded.role || 'CLIENTE'
-      };
+      try {
+        const decoded = await firebaseAdmin.auth().verifyIdToken(idToken);
+        req.user = {
+          uid: decoded.uid,
+          email: decoded.email,
+          displayName: decoded.name,
+          name: decoded.name,
+          role: (decoded as any).role || 'CLIENTE'
+        };
+        verified = true;
+      } catch (fbTokenErr) {
+        // Fall through to JWT verification below
+      }
     }
+
+    // 2. Try Local JWT Token
+    if (!verified) {
+      try {
+        const decoded = jwt.verify(idToken, JWT_SECRET) as any;
+        req.user = {
+          uid: decoded.uid || decoded.id,
+          email: decoded.email,
+          displayName: decoded.name || decoded.displayName,
+          name: decoded.name || decoded.displayName,
+          role: decoded.role || 'CLIENTE'
+        };
+        verified = true;
+      } catch (jwtErr) {
+        // Neither verified
+      }
+    }
+
+    if (!verified) {
+      return res.status(401).json({ error: 'Token inválido o expirado' });
+    }
+
     next();
   } catch (error: any) {
     console.error('Token verification error:', error.message);
